@@ -1,0 +1,233 @@
+import Timetable from '../models/Timetable.js';
+import TaskInstance from '../models/TaskInstance.js';
+import { toISTDateString } from '../utils/dateHelper.js';
+import moment from 'moment-timezone';
+
+/**
+ * @desc    Create a new timetable
+ * @route   POST /api/timetables
+ * @access  Private (Admin)
+ */
+export const createTimetable = async (req, res, next) => {
+  try {
+    const { name, startDate, endDate, defaultSchedule, overrides } = req.body;
+
+    if (!name || !startDate || !endDate) {
+      res.status(400);
+      throw new Error('Please fill all required fields');
+    }
+
+    const start = moment.tz(startDate, 'Asia/Kolkata').startOf('day').toDate();
+    const end = moment.tz(endDate, 'Asia/Kolkata').endOf('day').toDate();
+
+    if (start > end) {
+      res.status(400);
+      throw new Error('Start date must be before end date');
+    }
+
+    // Check for overlap with existing timetables
+    const overlap = await Timetable.findOne({
+      $or: [
+        { startDate: { $lte: end }, endDate: { $gte: start } },
+      ],
+    });
+
+    if (overlap) {
+      res.status(400);
+      throw new Error(`Timetable dates overlap with existing timetable: ${overlap.name}`);
+    }
+
+    const timetable = await Timetable.create({
+      name,
+      startDate: start,
+      endDate: end,
+      defaultSchedule: defaultSchedule || [],
+      overrides: overrides || [],
+    });
+
+    res.status(201).json(timetable);
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * @desc    Get all timetables
+ * @route   GET /api/timetables
+ * @access  Private (Admin)
+ */
+export const getTimetables = async (req, res, next) => {
+  try {
+    const timetables = await Timetable.find().sort({ startDate: -1 });
+    res.json(timetables);
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * @desc    Get single timetable details
+ * @route   GET /api/timetables/:id
+ * @access  Private (Admin)
+ */
+export const getTimetableById = async (req, res, next) => {
+  try {
+    const timetable = await Timetable.findById(req.params.id);
+    if (!timetable) {
+      res.status(404);
+      throw new Error('Timetable not found');
+    }
+    res.json(timetable);
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * @desc    Update a timetable
+ * @route   PUT /api/timetables/:id
+ * @access  Private (Admin)
+ */
+export const updateTimetable = async (req, res, next) => {
+  try {
+    const { name, startDate, endDate, defaultSchedule } = req.body;
+    const timetable = await Timetable.findById(req.params.id);
+
+    if (!timetable) {
+      res.status(404);
+      throw new Error('Timetable not found');
+    }
+
+    if (name) timetable.name = name;
+    
+    if (startDate || endDate) {
+      const start = startDate ? moment.tz(startDate, 'Asia/Kolkata').startOf('day').toDate() : timetable.startDate;
+      const end = endDate ? moment.tz(endDate, 'Asia/Kolkata').endOf('day').toDate() : timetable.endDate;
+
+      if (start > end) {
+        res.status(400);
+        throw new Error('Start date must be before end date');
+      }
+
+      // Check overlap excluding itself
+      const overlap = await Timetable.findOne({
+        _id: { $ne: timetable._id },
+        startDate: { $lte: end },
+        endDate: { $gte: start },
+      });
+
+      if (overlap) {
+        res.status(400);
+        throw new Error(`Timetable dates overlap with existing timetable: ${overlap.name}`);
+      }
+
+      timetable.startDate = start;
+      timetable.endDate = end;
+    }
+
+    if (defaultSchedule) {
+      timetable.defaultSchedule = defaultSchedule;
+
+      // Delete all future task instances generated from this timetable (not started yet)
+      // so they can be regenerated using the new default schedule blueprint
+      const now = moment().tz('Asia/Kolkata').toDate();
+      await TaskInstance.deleteMany({
+        timetableId: timetable._id,
+        scheduledStart: { $gt: now }
+      });
+    }
+
+    const updatedTimetable = await timetable.save();
+    res.json(updatedTimetable);
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * @desc    Delete a timetable
+ * @route   DELETE /api/timetables/:id
+ * @access  Private (Admin)
+ */
+export const deleteTimetable = async (req, res, next) => {
+  try {
+    const timetable = await Timetable.findById(req.params.id);
+    if (!timetable) {
+      res.status(404);
+      throw new Error('Timetable not found');
+    }
+
+    // Delete all future task instances generated from this timetable (not started yet)
+    const now = moment().tz('Asia/Kolkata').toDate();
+    await TaskInstance.deleteMany({
+      timetableId: timetable._id,
+      scheduledStart: { $gt: now }
+    });
+
+    await timetable.deleteOne();
+    res.json({ message: 'Timetable removed and active task instances cleared' });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * @desc    Add or update a date override
+ * @route   POST /api/timetables/:id/overrides
+ * @access  Private (Admin)
+ */
+export const addOrUpdateOverride = async (req, res, next) => {
+  try {
+    const { date, tasks } = req.body; // date format: YYYY-MM-DD
+    const timetable = await Timetable.findById(req.params.id);
+
+    if (!timetable) {
+      res.status(404);
+      throw new Error('Timetable not found');
+    }
+
+    if (!date || !tasks) {
+      res.status(400);
+      throw new Error('Date and tasks details are required');
+    }
+
+    // Verify date is within timetable range
+    const overrideDate = moment.tz(date, 'YYYY-MM-DD', 'Asia/Kolkata').startOf('day').toDate();
+    if (overrideDate < timetable.startDate || overrideDate > timetable.endDate) {
+      res.status(400);
+      throw new Error(`Override date ${date} is outside timetable range (${toISTDateString(timetable.startDate)} to ${toISTDateString(timetable.endDate)})`);
+    }
+
+    // Verify date is not in the past (completed date)
+    const today = moment.tz('Asia/Kolkata').startOf('day').toDate();
+    if (overrideDate < today) {
+      res.status(400);
+      throw new Error('Cannot add or modify overrides for completed (past) dates');
+    }
+
+    // Check if override for date already exists
+    const overrideIndex = timetable.overrides.findIndex((ov) => ov.date === date);
+
+    if (overrideIndex > -1) {
+      // Update existing override
+      timetable.overrides[overrideIndex].tasks = tasks;
+    } else {
+      // Add new override
+      timetable.overrides.push({ date, tasks });
+    }
+
+    // Delete future task instances for this specific date
+    // so they regenerate using the new override
+    const now = moment().tz('Asia/Kolkata').toDate();
+    await TaskInstance.deleteMany({
+      timetableId: timetable._id,
+      date,
+      scheduledStart: { $gt: now }
+    });
+
+    const updatedTimetable = await timetable.save();
+    res.json(updatedTimetable);
+  } catch (error) {
+    next(error);
+  }
+};
