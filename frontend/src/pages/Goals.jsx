@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import api from '../utils/api.js';
 import { 
-  Trophy, Plus, Calendar, Target, Award, 
-  Lock, CheckCircle2, AlertTriangle, X 
+  Trophy, Target, Award, 
+  Lock, CheckCircle2, AlertTriangle 
 } from 'lucide-react';
 import moment from 'moment';
 
@@ -85,7 +85,7 @@ const Goals = () => {
     try {
       await api.delete(`/goals/${id}`);
       fetchData();
-    } catch (err) {
+    } catch {
       alert('Delete failed');
     }
   };

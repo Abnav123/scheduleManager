@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import api from '../utils/api.js';
 import { 
   Calendar, ChevronLeft, ChevronRight, BookOpen, 
-  MessageSquare, Award, AlertTriangle, ShieldCheck, Clock 
+  MessageSquare, Award
 } from 'lucide-react';
 import { getTodayIST } from '../utils/dateHelper.js';
 import moment from 'moment';

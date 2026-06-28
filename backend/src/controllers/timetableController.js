@@ -1,8 +1,27 @@
 import Timetable from '../models/Timetable.js';
 import TaskInstance from '../models/TaskInstance.js';
+import User from '../models/User.js';
 import { toISTDateString } from '../utils/dateHelper.js';
 import moment from 'moment-timezone';
 import { updateStreak } from '../services/taskService.js';
+
+const refundXpForTasks = async (filter) => {
+  try {
+    const tasksToRefund = await TaskInstance.find(filter);
+    const totalRefund = tasksToRefund.reduce((sum, t) => sum + (t.xpSpent || 0), 0);
+    if (totalRefund > 0) {
+      const user = await User.findOne({});
+      if (user) {
+        user.xp += totalRefund;
+        user.xpSpent = Math.max(0, user.xpSpent - totalRefund);
+        await user.save();
+        console.log(`Refunded ${totalRefund} XP to user. New XP: ${user.xp}`);
+      }
+    }
+  } catch (err) {
+    console.error('Error during XP refund:', err);
+  }
+};
 
 /**
  * Helper to check if a list of tasks has any time overlaps
@@ -181,10 +200,12 @@ export const updateTimetable = async (req, res, next) => {
       // Delete all future task instances generated from this timetable (not started yet)
       // so they can be regenerated using the new default schedule blueprint
       const now = moment().tz('Asia/Kolkata').toDate();
-      await TaskInstance.deleteMany({
+      const filter = {
         timetableId: timetable._id,
         scheduledStart: { $gt: now }
-      });
+      };
+      await refundXpForTasks(filter);
+      await TaskInstance.deleteMany(filter);
     }
 
     const updatedTimetable = await timetable.save();
@@ -220,9 +241,11 @@ export const deleteTimetable = async (req, res, next) => {
     }
 
     // Delete all task instances generated from this timetable
-    await TaskInstance.deleteMany({
+    const filter = {
       timetableId: timetable._id
-    });
+    };
+    await refundXpForTasks(filter);
+    await TaskInstance.deleteMany(filter);
 
     await timetable.deleteOne();
 
@@ -294,11 +317,13 @@ export const addOrUpdateOverride = async (req, res, next) => {
     // Delete future task instances for this specific date
     // so they regenerate using the new override
     const now = moment().tz('Asia/Kolkata').toDate();
-    await TaskInstance.deleteMany({
+    const filter = {
       timetableId: timetable._id,
       date,
       scheduledStart: { $gt: now }
-    });
+    };
+    await refundXpForTasks(filter);
+    await TaskInstance.deleteMany(filter);
 
     const updatedTimetable = await timetable.save();
     res.json(updatedTimetable);

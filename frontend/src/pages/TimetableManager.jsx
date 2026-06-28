@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import api from '../utils/api.js';
 import { 
-  Plus, Trash2, Calendar, Clock, Edit3, Save, 
-  X, ChevronDown, ChevronUp, AlertCircle, Compass 
+  Plus, Trash2, Calendar, Save, 
+  X, AlertCircle 
 } from 'lucide-react';
 import moment from 'moment';
 
@@ -152,6 +152,10 @@ const TimetableManager = () => {
   const [overrideError, setOverrideError] = useState('');
   const [applyScope, setApplyScope] = useState('single');
 
+  // Task editing state
+  const [editingTempIndex, setEditingTempIndex] = useState(null);
+  const [editingOverrideIndex, setEditingOverrideIndex] = useState(null);
+
   // Fetch timetables
   const fetchTimetables = useCallback(async () => {
     try {
@@ -186,8 +190,18 @@ const TimetableManager = () => {
       return;
     }
 
-    // Check if new task overlaps with any existing tasks in defaultSchedule
-    const overlaps = defaultSchedule.some((task) => {
+    // Check if a task with the same name already exists in defaultSchedule
+    let targetIndex = editingTempIndex;
+    if (targetIndex === null) {
+      const foundIdx = defaultSchedule.findIndex(t => t.name.trim().toLowerCase() === taskName.trim().toLowerCase());
+      if (foundIdx > -1) {
+        targetIndex = foundIdx;
+      }
+    }
+
+    // Check if new task overlaps with any existing tasks in defaultSchedule (excluding targetIndex if editing/overriding)
+    const overlaps = defaultSchedule.some((task, idx) => {
+      if (targetIndex !== null && idx === targetIndex) return false;
       return sTime < task.endTime && task.startTime < eTime;
     });
     if (overlaps) {
@@ -217,7 +231,15 @@ const TimetableManager = () => {
       applyTo: tempTaskApply,
     };
 
-    setDefaultSchedule([...defaultSchedule, newTask]);
+    if (targetIndex !== null) {
+      const updated = [...defaultSchedule];
+      updated[targetIndex] = newTask;
+      setDefaultSchedule(updated);
+      setEditingTempIndex(null);
+    } else {
+      setDefaultSchedule([...defaultSchedule, newTask]);
+    }
+
     // Clear task inputs
     setTaskName('');
     setPunishment('');
@@ -231,6 +253,16 @@ const TimetableManager = () => {
   const handleRemoveTempTask = (index) => {
     const updated = defaultSchedule.filter((_, i) => i !== index);
     setDefaultSchedule(updated);
+    if (editingTempIndex === index) {
+      setEditingTempIndex(null);
+      setTaskName('');
+      setPunishment('');
+      setNotes('');
+      if (startTimeRef.current) startTimeRef.current.value = '';
+      if (endTimeRef.current) endTimeRef.current.value = '';
+    } else if (editingTempIndex !== null && editingTempIndex > index) {
+      setEditingTempIndex(editingTempIndex - 1);
+    }
   };
 
   // Handle Submit Timetable
@@ -247,8 +279,8 @@ const TimetableManager = () => {
 
     try {
       setError('');
-      const blueprintTasks = defaultSchedule.filter(t => t.applyTo !== 'today').map(({ applyTo, ...rest }) => rest);
-      const todayTasks = defaultSchedule.filter(t => t.applyTo === 'today').map(({ applyTo, ...rest }) => rest);
+      const blueprintTasks = defaultSchedule.filter(t => t.applyTo !== 'today').map(({ applyTo: _applyTo, ...rest }) => rest);
+      const todayTasks = defaultSchedule.filter(t => t.applyTo === 'today').map(({ applyTo: _applyTo, ...rest }) => rest);
 
       const todayOverrideList = [...blueprintTasks, ...todayTasks];
       const overridesObj = todayTasks.length > 0 ? [{
@@ -269,6 +301,7 @@ const TimetableManager = () => {
       setEndDate('');
       setDefaultSchedule([]);
       setShowAddForm(false);
+      setEditingTempIndex(null);
       fetchTimetables();
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to create timetable.');
@@ -286,8 +319,9 @@ const TimetableManager = () => {
       if (selectedTimetable?._id === id) {
         setSelectedTimetable(null);
         setShowOverrideForm(false);
+        setEditingOverrideIndex(null);
       }
-    } catch (err) {
+    } catch {
       alert('Delete failed');
     }
   };
@@ -300,12 +334,14 @@ const TimetableManager = () => {
     setShowOverrideForm(true);
     setOverrideError('');
     setApplyScope('single');
+    setEditingOverrideIndex(null);
   };
 
   // Load current tasks for override date selected from the interactive calendar
   const handleSelectCalendarDate = (dateStr) => {
     setOverrideDate(dateStr);
     setOverrideError('');
+    setEditingOverrideIndex(null);
     
     // Check if override already exists in timetable local object
     const existingOverride = selectedTimetable.overrides.find((ov) => ov.date === dateStr);
@@ -332,8 +368,18 @@ const TimetableManager = () => {
       return;
     }
 
-    // Check if new task overlaps with any existing tasks in overrideTasks
-    const overlaps = overrideTasks.some((task) => {
+    // Check if a task with the same name already exists in overrideTasks
+    let targetIndex = editingOverrideIndex;
+    if (targetIndex === null) {
+      const foundIdx = overrideTasks.findIndex(t => t.name.trim().toLowerCase() === taskName.trim().toLowerCase());
+      if (foundIdx > -1) {
+        targetIndex = foundIdx;
+      }
+    }
+
+    // Check if new task overlaps with any existing tasks in overrideTasks (excluding targetIndex if editing/overriding)
+    const overlaps = overrideTasks.some((task, idx) => {
+      if (targetIndex !== null && idx === targetIndex) return false;
       return sTime < task.endTime && task.startTime < eTime;
     });
     if (overlaps) {
@@ -345,7 +391,7 @@ const TimetableManager = () => {
     const todayStr = moment().format('YYYY-MM-DD');
     if (overrideDate === todayStr) {
       const now = moment();
-      const taskStart = moment(`${todayStr} ${sTime}`, 'YYYY-MM-DD HH:mm');
+      const taskStart = moment(`${overrideDate} ${sTime}`, 'YYYY-MM-DD HH:mm');
       const minStart = now.clone().add(3, 'minutes');
       if (taskStart.isBefore(minStart)) {
         setOverrideError('Start time must be at least 3 minutes after the current time for today\'s schedule');
@@ -362,7 +408,15 @@ const TimetableManager = () => {
       notes,
     };
 
-    setOverrideTasks([...overrideTasks, newTask]);
+    if (targetIndex !== null) {
+      const updatedTasks = [...overrideTasks];
+      updatedTasks[targetIndex] = newTask;
+      setOverrideTasks(updatedTasks);
+      setEditingOverrideIndex(null);
+    } else {
+      setOverrideTasks([...overrideTasks, newTask]);
+    }
+
     // Clear inputs
     setTaskName('');
     setPunishment('');
@@ -385,6 +439,16 @@ const TimetableManager = () => {
       }
     }
     setOverrideTasks(overrideTasks.filter((_, i) => i !== index));
+    if (editingOverrideIndex === index) {
+      setEditingOverrideIndex(null);
+      setTaskName('');
+      setPunishment('');
+      setNotes('');
+      if (overrideStartTimeRef.current) overrideStartTimeRef.current.value = '';
+      if (overrideEndTimeRef.current) overrideEndTimeRef.current.value = '';
+    } else if (editingOverrideIndex !== null && editingOverrideIndex > index) {
+      setEditingOverrideIndex(editingOverrideIndex - 1);
+    }
   };
 
   // Save Override back to database
@@ -411,6 +475,7 @@ const TimetableManager = () => {
       }
       setShowOverrideForm(false);
       setSelectedTimetable(null);
+      setEditingOverrideIndex(null);
       fetchTimetables();
     } catch (err) {
       setOverrideError(err.response?.data?.message || 'Failed to save settings.');
@@ -563,14 +628,33 @@ const TimetableManager = () => {
               </div>
             </div>
             
-            <button
-              type="button"
-              onClick={handleAddTempTask}
-              className="btn-blue flex items-center justify-center gap-1.5 self-end"
-            >
-              <Plus size={12} />
-              <span>Add tasks blueprint</span>
-            </button>
+            <div className="flex gap-2 self-end">
+              {editingTempIndex !== null && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditingTempIndex(null);
+                    setTaskName('');
+                    setPunishment('');
+                    setNotes('');
+                    if (startTimeRef.current) startTimeRef.current.value = '';
+                    if (endTimeRef.current) endTimeRef.current.value = '';
+                    setTaskError('');
+                  }}
+                  className="btn-red"
+                >
+                  Cancel Edit
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={handleAddTempTask}
+                className="btn-blue flex items-center justify-center gap-1.5"
+              >
+                {editingTempIndex !== null ? <Save size={12} /> : <Plus size={12} />}
+                <span>{editingTempIndex !== null ? 'Update tasks blueprint' : 'Add tasks blueprint'}</span>
+              </button>
+            </div>
 
             {/* List of currently added task templates in build list */}
             <div className="mt-4 border-t-2 border-white pt-4">
@@ -578,8 +662,25 @@ const TimetableManager = () => {
               {defaultSchedule.length > 0 ? (
                 <div className="flex flex-col gap-2">
                   {defaultSchedule.map((t, idx) => (
-                    <div key={idx} className="flex items-center justify-between p-3 border-2 border-white bg-[#0e1017] text-xs font-mono">
-                      <div>
+                    <div 
+                      key={idx} 
+                      onClick={() => {
+                        setEditingTempIndex(idx);
+                        setTaskName(t.name);
+                        setCategory(t.category);
+                        setPunishment(t.punishment);
+                        setNotes(t.notes || '');
+                        setTempTaskApply(t.applyTo || 'all');
+                        if (startTimeRef.current) startTimeRef.current.value = t.startTime;
+                        if (endTimeRef.current) endTimeRef.current.value = t.endTime;
+                      }}
+                      className={`flex items-center justify-between p-3 border-2 cursor-pointer transition-all duration-100 font-mono text-xs ${
+                        editingTempIndex === idx 
+                          ? 'border-yellow-400 bg-yellow-400 bg-opacity-10' 
+                          : 'border-white bg-[#0e1017] hover:border-yellow-400 hover:bg-neutral-900'
+                      }`}
+                    >
+                      <div className="flex-1">
                         <strong>{t.name}</strong> <span className="text-neutral-400">({t.category})</span>
                         {t.applyTo === 'today' ? (
                           <span className="ml-2 text-[9px] px-1.5 py-0.5 bg-[#ff0000] text-white border border-white font-mono uppercase font-bold shadow-[1px_1px_0px_0px_rgba(255,255,255,1)]">Today Only</span>
@@ -589,10 +690,14 @@ const TimetableManager = () => {
                         <div className="text-[10px] text-neutral-400 mt-0.5">
                           {t.startTime} - {t.endTime} | Penalty: {t.punishment}
                         </div>
+                        {t.notes && <div className="text-[9px] text-neutral-500 italic mt-0.5">Notes: {t.notes}</div>}
                       </div>
                       <button 
                         type="button" 
-                        onClick={() => handleRemoveTempTask(idx)} 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleRemoveTempTask(idx);
+                        }} 
                         className="text-red-500 hover:bg-neutral-900 p-1 border-2 border-transparent hover:border-white"
                       >
                         <Trash2 size={14} />
@@ -700,26 +805,66 @@ const TimetableManager = () => {
                     />
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={handleAddOverrideTask}
-                    className="btn-blue self-end"
-                  >
-                    Add / Replace Task Override
-                  </button>
+                  <div className="flex gap-2 self-end">
+                    {editingOverrideIndex !== null && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingOverrideIndex(null);
+                          setTaskName('');
+                          setPunishment('');
+                          setNotes('');
+                          if (overrideStartTimeRef.current) overrideStartTimeRef.current.value = '';
+                          if (overrideEndTimeRef.current) overrideEndTimeRef.current.value = '';
+                          setOverrideError('');
+                        }}
+                        className="btn-red"
+                      >
+                        Cancel Edit
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={handleAddOverrideTask}
+                      className="btn-blue flex items-center justify-center gap-1.5"
+                    >
+                      {editingOverrideIndex !== null ? <Save size={12} /> : <Plus size={12} />}
+                      <span>{editingOverrideIndex !== null ? 'Update Task Override' : 'Add / Replace Task Override'}</span>
+                    </button>
+                  </div>
 
                   {/* Tasks List */}
                   <div className="flex flex-col gap-2 mt-2">
                     {overrideTasks.length > 0 ? (
                       overrideTasks.map((t, idx) => (
-                        <div key={idx} className="flex items-center justify-between p-3 border-2 border-white bg-[#0e1017] text-xs font-mono">
-                          <div>
+                        <div 
+                          key={idx} 
+                          onClick={() => {
+                            setEditingOverrideIndex(idx);
+                            setTaskName(t.name);
+                            setCategory(t.category);
+                            setPunishment(t.punishment);
+                            setNotes(t.notes || '');
+                            if (overrideStartTimeRef.current) overrideStartTimeRef.current.value = t.startTime;
+                            if (overrideEndTimeRef.current) overrideEndTimeRef.current.value = t.endTime;
+                          }}
+                          className={`flex items-center justify-between p-3 border-2 cursor-pointer transition-all duration-100 font-mono text-xs ${
+                            editingOverrideIndex === idx 
+                              ? 'border-yellow-400 bg-yellow-400 bg-opacity-10' 
+                              : 'border-white bg-[#0e1017] hover:border-yellow-400 hover:bg-neutral-900'
+                          }`}
+                        >
+                          <div className="flex-1">
                             <strong>{t.name}</strong> <span className="text-neutral-400">({t.category})</span>
                             <div className="text-[10px] text-neutral-400 mt-0.5">{t.startTime} - {t.endTime} | Penalty: {t.punishment}</div>
+                            {t.notes && <div className="text-[9px] text-neutral-500 italic mt-0.5">Notes: {t.notes}</div>}
                           </div>
                           <button 
                             type="button" 
-                            onClick={() => handleRemoveOverrideTask(idx)} 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleRemoveOverrideTask(idx);
+                            }} 
                             className="text-red-500 hover:bg-neutral-900 p-1 border-2 border-transparent hover:border-white"
                           >
                             <Trash2 size={14} />

@@ -82,11 +82,13 @@ export const getDashboardData = async (req, res, next) => {
 
     const nowMoment = getNowIST();
     
-    // Find current task
+    // Find current task (must be in an active, incomplete status)
     currentTask = todayTasks.find((task) => {
       const start = moment(task.scheduledStart);
       const end = moment(task.scheduledEnd);
-      return nowMoment.isSameOrAfter(start) && nowMoment.isSameOrBefore(end);
+      return nowMoment.isSameOrAfter(start) && 
+             nowMoment.isSameOrBefore(end) &&
+             ['Upcoming', 'In Progress', 'Ready To Complete'].includes(task.status);
     }) || null;
 
     // Find next task (upcoming task starting today after now)
@@ -97,10 +99,14 @@ export const getDashboardData = async (req, res, next) => {
 
     if (upcomingTasks.length > 0) {
       nextTask = upcomingTasks[0]; // Already sorted by startTime
-      countdownSeconds = moment(nextTask.scheduledStart).diff(nowMoment, 'seconds');
-    } else if (currentTask) {
+    }
+
+    if (currentTask) {
       // If there is a current task in progress, countdown to the end of it
       countdownSeconds = moment(currentTask.scheduledEnd).diff(nowMoment, 'seconds');
+    } else if (nextTask) {
+      // If no current task but a next task is upcoming, countdown to its start
+      countdownSeconds = moment(nextTask.scheduledStart).diff(nowMoment, 'seconds');
     }
 
     res.json({

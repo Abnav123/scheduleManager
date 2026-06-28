@@ -93,7 +93,7 @@ const Diary = () => {
         setMessage('✓ Journal entry saved.');
       }
       setIsEditing(false);
-    } catch (err) {
+    } catch {
       setMessage('❌ Failed to save journal.');
     } finally {
       setLoading(false);
@@ -117,7 +117,7 @@ const Diary = () => {
       setDiaryTags('');
       setMessage('✓ Journal entry cleared.');
       setIsEditing(false);
-    } catch (err) {
+    } catch {
       setMessage('❌ Failed to clear journal.');
     } finally {
       setLoading(false);
@@ -143,7 +143,7 @@ const Diary = () => {
         setMessage('✓ Daily reflection saved.');
       }
       setIsEditing(false);
-    } catch (err) {
+    } catch {
       setMessage('❌ Failed to save reflection.');
     } finally {
       setLoading(false);
@@ -165,7 +165,7 @@ const Diary = () => {
       setReflectionNotes('');
       setMessage('✓ Daily reflection cleared.');
       setIsEditing(false);
-    } catch (err) {
+    } catch {
       setMessage('❌ Failed to clear reflection.');
     } finally {
       setLoading(false);

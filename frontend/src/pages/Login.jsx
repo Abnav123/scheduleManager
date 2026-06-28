@@ -1,6 +1,6 @@
 import React, { useState, useContext, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AuthContext } from '../context/AuthContext.jsx';
+import { AuthContext } from '../context/AuthContextValue.jsx';
 import { ShieldAlert, KeyRound, User } from 'lucide-react';
 
 const Login = () => {

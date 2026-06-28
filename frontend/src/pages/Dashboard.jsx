@@ -1,15 +1,13 @@
 import React, { useState, useEffect, useContext, useCallback, useMemo } from 'react';
-import { AuthContext } from '../context/AuthContext.jsx';
+import { AuthContext } from '../context/AuthContextValue.jsx';
 import api from '../utils/api.js';
 import { 
-  Flame, Award, CheckCircle, AlertTriangle, HelpCircle, 
-  Clock, ShieldAlert, Sparkles, ChevronRight, Eye, RefreshCw, X 
+  Flame, Award, ShieldAlert, Sparkles, ChevronRight, Eye, RefreshCw, X 
 } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
-import moment from 'moment';
 
 // Memoized Task Card to optimize rendering
-const TaskCard = React.memo(({ task, onComplete, onReduce, onUnavoidable, onPunishmentComplete, userXp }) => {
+const TaskCard = React.memo(({ task, onComplete, onReduce, onUnavoidable, onPunishmentComplete }) => {
   const [showReduceInput, setShowReduceInput] = useState(false);
   const [reduceMinutes, setReduceMinutes] = useState('');
   const [showUnavoidableInput, setShowUnavoidableInput] = useState(false);
@@ -227,7 +225,7 @@ const TaskCard = React.memo(({ task, onComplete, onReduce, onUnavoidable, onPuni
 });
 
 const Dashboard = ({ onEnterFocusMode }) => {
-  const { user, refreshUser } = useContext(AuthContext);
+  const { refreshUser } = useContext(AuthContext);
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [countdown, setCountdown] = useState('');
@@ -481,7 +479,6 @@ const Dashboard = ({ onEnterFocusMode }) => {
                   onReduce={handleReduceDuration}
                   onUnavoidable={handleMarkUnavoidable}
                   onPunishmentComplete={handlePunishmentComplete}
-                  userXp={user?.xp || 0}
                 />
               ))
             ) : (

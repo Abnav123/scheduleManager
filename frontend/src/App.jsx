@@ -1,6 +1,7 @@
-import React, { useContext, useState, useEffect } from 'react';
+import React, { useContext, useState, useEffect, useCallback } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider, AuthContext } from './context/AuthContext.jsx';
+import { AuthProvider } from './context/AuthContext.jsx';
+import { AuthContext } from './context/AuthContextValue.jsx';
 import Layout from './components/Layout.jsx';
 import FocusMode from './components/FocusMode.jsx';
 import Login from './pages/Login.jsx';
@@ -13,7 +14,6 @@ import Goals from './pages/Goals.jsx';
 import NotesPlaceholder from './pages/NotesPlaceholder.jsx';
 import api from './utils/api.js';
 import { RefreshCw } from 'lucide-react';
-import moment from 'moment';
 
 // Helper component for private routes
 const ProtectedRoute = ({ children, onEnterFocusMode }) => {
@@ -40,12 +40,12 @@ const ProtectedRoute = ({ children, onEnterFocusMode }) => {
 };
 
 const AppContent = () => {
-  const { isAuthenticated, user } = useContext(AuthContext);
+  const { isAuthenticated } = useContext(AuthContext);
   const [isFocusMode, setIsFocusMode] = useState(false);
   const [activeFocusTask, setActiveFocusTask] = useState(null);
 
   // Search and update current active focus task on start or interval
-  const updateActiveTask = async () => {
+  const updateActiveTask = useCallback(async () => {
     if (!isAuthenticated) return;
     try {
       const res = await api.get('/stats/dashboard');
@@ -54,7 +54,7 @@ const AppContent = () => {
     } catch (error) {
       console.error('Failed to update active task for focus mode:', error);
     }
-  };
+  }, [isAuthenticated]);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -62,7 +62,7 @@ const AppContent = () => {
       const interval = setInterval(updateActiveTask, 30000); // refresh active task every 30 seconds
       return () => clearInterval(interval);
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, updateActiveTask]);
 
   // Focus Mode Actions
   const handleEnterFocusMode = () => {

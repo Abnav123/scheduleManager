@@ -1,4 +1,5 @@
 import TaskInstance from '../models/TaskInstance.js';
+import User from '../models/User.js';
 import {
   generateDailyTasks,
   completeTask,
@@ -138,6 +139,14 @@ export const editTaskInstance = async (req, res, next) => {
       const originalDuration = getDiffMinutes(scheduledStart, scheduledEnd);
       task.originalDuration = originalDuration;
       task.reducedDuration = originalDuration; // reset reduction if times modified
+      if (task.xpSpent > 0) {
+        const user = await User.findOne({});
+        if (user) {
+          user.xp += task.xpSpent;
+          user.xpSpent = Math.max(0, user.xpSpent - task.xpSpent);
+          await user.save();
+        }
+      }
       task.xpSpent = 0;
     }
 
@@ -164,6 +173,14 @@ export const deleteTaskInstance = async (req, res, next) => {
     if (now.isAfter(moment(task.scheduledEnd))) {
       res.status(400);
       throw new Error('Task is immutable because its end time has passed');
+    }
+    if (task.xpSpent > 0) {
+      const user = await User.findOne({});
+      if (user) {
+        user.xp += task.xpSpent;
+        user.xpSpent = Math.max(0, user.xpSpent - task.xpSpent);
+        await user.save();
+      }
     }
     await task.deleteOne();
     res.json({ message: 'Task instance removed' });

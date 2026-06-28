@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Eye, Clock, Check, X, Shield } from 'lucide-react';
+import { Clock, Check, X, Shield } from 'lucide-react';
 import moment from 'moment';
 
 const FocusMode = ({ task, onExit, onComplete }) => {
@@ -80,22 +80,22 @@ const FocusMode = ({ task, onExit, onComplete }) => {
   }), []);
 
   return (
-    <div className="fixed inset-0 z-50 bg-[#030408] text-white flex flex-col items-center justify-between p-4 sm:p-12 overflow-hidden select-none border-4 border-white font-mono">
+    <div className="fixed inset-0 z-50 bg-[#030408] text-white flex flex-col items-center justify-between p-4 sm:py-6 sm:px-12 overflow-hidden select-none border-4 border-white font-mono">
       
       {/* Top Bar: IST Clock and Shield */}
-      <div className="w-full flex flex-col sm:flex-row items-center justify-between z-10 gap-2 text-center">
+      <div className="w-full flex flex-col sm:flex-row items-center justify-between z-10 gap-2 text-center shrink-0">
         <div className="flex items-center gap-2 text-xs tracking-widest text-white font-mono uppercase font-bold">
           <Shield size={14} className="text-white" />
           <span>Mind Shield Active</span>
         </div>
-        <div className="font-mono text-sm sm:text-lg text-white flex items-center gap-2 font-bold">
+        <div className="font-mono text-sm sm:text-base text-white flex items-center gap-2 font-bold">
           <Clock size={16} />
           <span>{currentTimeIST}</span>
         </div>
       </div>
 
       {/* Main Focus Dashboard */}
-      <div className="w-full max-w-3xl text-center flex flex-col items-center justify-center gap-4 sm:gap-8 z-10 flex-1 my-4">
+      <div className="w-full max-w-3xl text-center flex flex-col items-center justify-center gap-3 sm:gap-4 z-10 flex-1 my-2 shrink-0">
         {task ? (
           <>
             {/* Category Tag */}
@@ -104,18 +104,18 @@ const FocusMode = ({ task, onExit, onComplete }) => {
             </span>
 
             {/* Task Name */}
-            <h2 className="text-2xl sm:text-4xl md:text-5xl font-bold tracking-wider text-white px-2">
+            <h2 className="text-xl sm:text-3xl md:text-4xl font-bold tracking-wider text-white px-2">
               {task.name}
             </h2>
 
             {/* Large Countdown Clock */}
-            <div className="text-4xl sm:text-6xl md:text-8xl font-mono tracking-widest text-white font-bold select-none my-2">
+            <div className="text-4xl sm:text-5xl md:text-7xl font-mono tracking-widest text-white font-bold select-none my-1">
               {timeLeft || '00:00:00'}
             </div>
 
             {/* Minimalist Progress Bar */}
-            <div className="w-full max-w-xl flex flex-col gap-2 px-2">
-              <div className="w-full bg-neutral-800 border-2 border-white h-4 overflow-hidden">
+            <div className="w-full max-w-xl flex flex-col gap-1.5 px-2">
+              <div className="w-full bg-neutral-850 border-2 border-white h-4 overflow-hidden">
                 <div 
                   className="bg-[#0000ff] border-r border-white h-full transition-all duration-1000 ease-out"
                   style={{ width: `${percentElapsed}%` }}
@@ -129,17 +129,17 @@ const FocusMode = ({ task, onExit, onComplete }) => {
             </div>
 
             {/* Completion Button */}
-            <div className="mt-4 sm:mt-8 flex flex-col items-center gap-3">
+            <div className="mt-2 sm:mt-4 flex flex-col items-center gap-2">
               {canComplete ? (
                 <button
                   onClick={() => onComplete(task._id)}
-                  className="btn-green flex items-center gap-3 px-8 py-4"
+                  className="btn-green flex items-center gap-3 px-8 py-3"
                 >
                   <Check size={20} />
                   <span>Reach Completion</span>
                 </button>
               ) : (
-                <div className="text-xs sm:text-sm text-neutral-450 font-mono flex flex-col items-center gap-2 font-bold max-w-md px-4">
+                <div className="text-xs sm:text-sm text-neutral-400 font-mono flex flex-col items-center gap-1 font-bold max-w-md px-4">
                   <span>The task is in progress.</span>
                   <span className="text-[10px] uppercase tracking-wider text-opacity-70 font-bold">
                     Complete button activates in the final window (3% or 5 mins)
@@ -149,7 +149,7 @@ const FocusMode = ({ task, onExit, onComplete }) => {
             </div>
           </>
         ) : (
-          <div className="flex flex-col items-center gap-4">
+          <div className="flex flex-col items-center gap-3">
             <h2 className="text-2xl sm:text-3xl font-bold text-neutral-500">Empty Mind</h2>
             <p className="text-xs sm:text-sm italic font-mono text-neutral-400 max-w-md">
               "When you have no task before you, focus on your breathing. Remain still, clear your thoughts, and prepare your spirit."
@@ -159,13 +159,13 @@ const FocusMode = ({ task, onExit, onComplete }) => {
       </div>
 
       {/* Bottom Segment: Zen Quote and Exit Button */}
-      <div className="w-full flex flex-col items-center gap-4 sm:gap-8 z-10">
+      <div className="w-full flex flex-col items-center gap-3 sm:gap-4 z-10 shrink-0">
         {/* Quote Card */}
-        <div className="w-full max-w-2xl px-4 py-4 sm:px-8 sm:py-6 border-2 border-white bg-[#0e1017] brutalist-card relative overflow-hidden text-xs sm:text-sm">
+        <div className="w-full max-w-2xl px-4 py-3 sm:px-6 sm:py-4 border-2 border-white bg-[#0e1017] brutalist-card relative overflow-hidden text-xs sm:text-sm">
           <p className="italic text-center text-white leading-relaxed">
             "{task?.notes || defaultQuote.quote}"
           </p>
-          <p className="text-right text-[9px] uppercase font-mono tracking-widest text-white font-bold mt-2">
+          <p className="text-right text-[9px] uppercase font-mono tracking-widest text-white font-bold mt-1.5">
             — {task ? 'Task Focus Note' : defaultQuote.author}
           </p>
         </div>
@@ -173,7 +173,7 @@ const FocusMode = ({ task, onExit, onComplete }) => {
         {/* Exit Button */}
         <button
           onClick={onExit}
-          className="btn-red flex items-center gap-2 px-6 py-2.5"
+          className="btn-red flex items-center gap-2 px-6 py-2"
         >
           <X size={14} />
           <span>Exit Focus Chamber</span>

@@ -1,8 +1,8 @@
 import React, { useContext, useState, useEffect } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
-import { AuthContext } from '../context/AuthContext.jsx';
+import { AuthContext } from '../context/AuthContextValue.jsx';
 import { 
-  Flame, BookOpen, Calendar, BarChart2, Trophy, 
+  Flame, BookOpen, BarChart2, Trophy, 
   FileText, Clock, LogOut, LayoutDashboard, Compass, EyeOff, Menu, X 
 } from 'lucide-react';
 
@@ -64,9 +64,11 @@ const Layout = ({ children, onEnterFocusMode }) => {
   };
 
   // Level computation logic
-  const totalXp = user?.xp || 0;
-  const level = Math.floor(totalXp / 1000) + 1;
-  const xpInCurrentLevel = totalXp % 1000;
+  const currentXp = user?.xp || 0;
+  const spentXp = user?.xpSpent || 0;
+  const lifetimeXp = currentXp + spentXp;
+  const level = Math.floor(lifetimeXp / 1000) + 1;
+  const xpInCurrentLevel = lifetimeXp % 1000;
   const xpProgressPercent = Math.min(100, Math.round((xpInCurrentLevel / 1000) * 100));
 
   return (
@@ -117,9 +119,15 @@ const Layout = ({ children, onEnterFocusMode }) => {
                     style={{ width: `${xpProgressPercent}%` }}
                   ></div>
                 </div>
-                <div className="flex items-center justify-between text-[11px] text-neutral-400 font-mono font-bold">
-                  <span>{xpInCurrentLevel}/1000 XP</span>
-                  <span>Total: {totalXp} XP</span>
+                <div className="flex flex-col gap-1 text-[11px] text-neutral-400 font-mono font-bold">
+                  <div className="flex items-center justify-between">
+                    <span>{xpInCurrentLevel}/1000 XP</span>
+                    <span>Total: {lifetimeXp} XP</span>
+                  </div>
+                  <div className="flex items-center justify-between border-t border-neutral-800 pt-1.5 mt-1">
+                    <span>Available XP:</span>
+                    <span className="text-[#ffff00]">{currentXp} XP</span>
+                  </div>
                 </div>
               </div>
             </div>

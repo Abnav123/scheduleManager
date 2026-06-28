@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import api from '../utils/api.js';
-import { Calendar as CalendarIcon, BarChart2, Flame, Award, RefreshCw } from 'lucide-react';
+import { Calendar as CalendarIcon, BarChart2, RefreshCw } from 'lucide-react';
 import moment from 'moment';
 
 const Stats = () => {
@@ -61,7 +61,6 @@ const Stats = () => {
   // Render Calendar Grid
   const calendarGrid = useMemo(() => {
     const start = currentDate.clone().startOf('month');
-    const end = currentDate.clone().endOf('month');
     const daysInMonth = currentDate.daysInMonth();
     
     // Find weekday offset of first day of month (0 = Sun, 6 = Sat)

@@ -1,7 +1,6 @@
-import React, { createContext, useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import api from '../utils/api.js';
-
-export const AuthContext = createContext(null);
+import { AuthContext } from './AuthContextValue.jsx';
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);

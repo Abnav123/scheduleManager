@@ -45,7 +45,21 @@ export const generateDailyTasks = async (dateStr) => {
   const taskTemplates = override ? override.tasks : timetable.defaultSchedule;
 
   // Get existing task instances for this date
-  const existingInstances = await TaskInstance.find({ date: dateStr });
+  let existingInstances = await TaskInstance.find({ date: dateStr }).sort({ createdAt: 1 });
+
+  // Clean up duplicate task instances for this date (keep the earliest one, delete the rest)
+  const seenKeys = new Set();
+  const uniqueInstances = [];
+  for (const inst of existingInstances) {
+    const key = `${inst.name}_${inst.startTime}_${inst.endTime}`;
+    if (seenKeys.has(key)) {
+      await TaskInstance.deleteOne({ _id: inst._id });
+    } else {
+      seenKeys.add(key);
+      uniqueInstances.push(inst);
+    }
+  }
+  existingInstances = uniqueInstances;
 
   const now = getNowIST();
 
@@ -55,10 +69,17 @@ export const generateDailyTasks = async (dateStr) => {
     if (isFuture) {
       const stillExistsInTemplate = taskTemplates.some(
         (temp) => temp.name === inst.name && 
-                  temp.startTime === inst.startTime && 
-                  temp.endTime === inst.endTime
+                  temp.startTime === inst.startTime
       );
       if (!stillExistsInTemplate) {
+        if (inst.xpSpent > 0) {
+          const user = await User.findOne({});
+          if (user) {
+            user.xp += inst.xpSpent;
+            user.xpSpent = Math.max(0, user.xpSpent - inst.xpSpent);
+            await user.save();
+          }
+        }
         await TaskInstance.deleteOne({ _id: inst._id });
       }
     }
@@ -68,11 +89,10 @@ export const generateDailyTasks = async (dateStr) => {
   const freshInstances = await TaskInstance.find({ date: dateStr });
 
   for (const template of taskTemplates) {
-    // Check if this template already has an instance
+    // Check if this template already has an instance (ignore endTime to account for duration reductions)
     const exists = freshInstances.some(
       (inst) => inst.name === template.name && 
-                inst.startTime === template.startTime && 
-                inst.endTime === template.endTime
+                inst.startTime === template.startTime
     );
 
     if (!exists) {
