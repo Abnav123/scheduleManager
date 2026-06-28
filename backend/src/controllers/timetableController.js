@@ -4,6 +4,23 @@ import { toISTDateString } from '../utils/dateHelper.js';
 import moment from 'moment-timezone';
 import { updateStreak } from '../services/taskService.js';
 
+/**
+ * Helper to check if a list of tasks has any time overlaps
+ * @param {Array} tasks - Array of task templates with { startTime, endTime, name }
+ * @returns {string|null} - Error message describing the overlap, or null if no overlap
+ */
+const checkTaskOverlaps = (tasks) => {
+  const sorted = [...tasks].sort((a, b) => a.startTime.localeCompare(b.startTime));
+  for (let i = 0; i < sorted.length - 1; i++) {
+    const current = sorted[i];
+    const next = sorted[i + 1];
+    if (current.endTime > next.startTime) {
+      return `Task "${current.name}" (${current.startTime} - ${current.endTime}) overlaps with task "${next.name}" (${next.startTime} - ${next.endTime})`;
+    }
+  }
+  return null;
+};
+
 
 /**
  * @desc    Create a new timetable
@@ -17,6 +34,26 @@ export const createTimetable = async (req, res, next) => {
     if (!name || !startDate || !endDate) {
       res.status(400);
       throw new Error('Please fill all required fields');
+    }
+
+    // Validate default schedule task overlaps
+    if (defaultSchedule && defaultSchedule.length > 0) {
+      const overlapErr = checkTaskOverlaps(defaultSchedule);
+      if (overlapErr) {
+        res.status(400);
+        throw new Error(overlapErr);
+      }
+    }
+
+    // Validate overrides task overlaps
+    if (overrides && overrides.length > 0) {
+      for (const ov of overrides) {
+        const overlapErr = checkTaskOverlaps(ov.tasks);
+        if (overlapErr) {
+          res.status(400);
+          throw new Error(`Override date ${ov.date} has overlapping tasks: ${overlapErr}`);
+        }
+      }
     }
 
     const start = moment.tz(startDate, 'Asia/Kolkata').startOf('day').toDate();
@@ -128,7 +165,18 @@ export const updateTimetable = async (req, res, next) => {
     }
 
     if (defaultSchedule) {
+      const overlapErr = checkTaskOverlaps(defaultSchedule);
+      if (overlapErr) {
+        res.status(400);
+        throw new Error(overlapErr);
+      }
+
       timetable.defaultSchedule = defaultSchedule;
+
+      // Clear overrides for today and the future so they reset to this new default schedule
+      const todayStr = moment().tz('Asia/Kolkata').format('YYYY-MM-DD');
+      timetable.overrides = timetable.overrides.filter((ov) => ov.date < todayStr);
+      timetable.markModified('overrides');
 
       // Delete all future task instances generated from this timetable (not started yet)
       // so they can be regenerated using the new default schedule blueprint
@@ -205,6 +253,15 @@ export const addOrUpdateOverride = async (req, res, next) => {
     if (!date || !tasks) {
       res.status(400);
       throw new Error('Date and tasks details are required');
+    }
+
+    // Validate override task overlaps
+    if (tasks && tasks.length > 0) {
+      const overlapErr = checkTaskOverlaps(tasks);
+      if (overlapErr) {
+        res.status(400);
+        throw new Error(overlapErr);
+      }
     }
 
     // Verify date is within timetable range

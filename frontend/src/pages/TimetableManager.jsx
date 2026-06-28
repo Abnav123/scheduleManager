@@ -186,6 +186,15 @@ const TimetableManager = () => {
       return;
     }
 
+    // Check if new task overlaps with any existing tasks in defaultSchedule
+    const overlaps = defaultSchedule.some((task) => {
+      return sTime < task.endTime && task.startTime < eTime;
+    });
+    if (overlaps) {
+      setTaskError('Task times overlap with an existing task in this blueprint');
+      return;
+    }
+
     // Check if start date is today and start time is in the past / too close (at least 3 min offset)
     const todayStr = moment().format('YYYY-MM-DD');
     if (startDate === todayStr) {
@@ -320,6 +329,15 @@ const TimetableManager = () => {
     }
     if (sTime >= eTime) {
       setOverrideError('End time must be after start time');
+      return;
+    }
+
+    // Check if new task overlaps with any existing tasks in overrideTasks
+    const overlaps = overrideTasks.some((task) => {
+      return sTime < task.endTime && task.startTime < eTime;
+    });
+    if (overlaps) {
+      setOverrideError('Task times overlap with an existing task in this override schedule');
       return;
     }
 

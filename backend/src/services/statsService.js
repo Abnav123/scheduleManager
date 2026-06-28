@@ -6,17 +6,45 @@ import moment from 'moment-timezone';
  * Get comprehensive statistics for the admin dashboard
  */
 export const getStatsSummary = async () => {
-  const user = await User.findOne({});
-  const totalTasks = await TaskInstance.countDocuments();
-  const completed = await TaskInstance.countDocuments({ status: 'Completed' });
-  const missed = await TaskInstance.countDocuments({ status: 'Missed' });
-  const unavoidable = await TaskInstance.countDocuments({ status: 'Unavoidable' });
+  const [
+    user,
+    totalTasks,
+    completed,
+    missed,
+    unavoidable,
+    focusTimeAggregate,
+    categoryHoursAggregate,
+    mostCompletedAggregate,
+    mostMissedAggregate
+  ] = await Promise.all([
+    User.findOne({}),
+    TaskInstance.countDocuments(),
+    TaskInstance.countDocuments({ status: 'Completed' }),
+    TaskInstance.countDocuments({ status: 'Missed' }),
+    TaskInstance.countDocuments({ status: 'Unavoidable' }),
+    TaskInstance.aggregate([
+      { $match: { status: 'Completed' } },
+      { $group: { _id: null, totalMinutes: { $sum: '$reducedDuration' } } },
+    ]),
+    TaskInstance.aggregate([
+      { $match: { status: 'Completed' } },
+      { $group: { _id: '$category', totalMinutes: { $sum: '$reducedDuration' } } },
+    ]),
+    TaskInstance.aggregate([
+      { $match: { status: 'Completed' } },
+      { $group: { _id: '$name', count: { $sum: 1 } } },
+      { $sort: { count: -1 } },
+      { $limit: 1 },
+    ]),
+    TaskInstance.aggregate([
+      { $match: { status: 'Missed' } },
+      { $group: { _id: '$name', count: { $sum: 1 } } },
+      { $sort: { count: -1 } },
+      { $limit: 1 },
+    ])
+  ]);
 
   // Focus Hours (Sum of reducedDuration of Completed tasks)
-  const focusTimeAggregate = await TaskInstance.aggregate([
-    { $match: { status: 'Completed' } },
-    { $group: { _id: null, totalMinutes: { $sum: '$reducedDuration' } } },
-  ]);
   const focusHours = focusTimeAggregate.length > 0 ? Number((focusTimeAggregate[0].totalMinutes / 60).toFixed(2)) : 0;
 
   // Completion percentage = Completed / (Total - Unavoidable)
@@ -28,31 +56,15 @@ export const getStatsSummary = async () => {
   const xpSpent = user ? user.xpSpent : 0;
 
   // Category-wise hours
-  const categoryHoursAggregate = await TaskInstance.aggregate([
-    { $match: { status: 'Completed' } },
-    { $group: { _id: '$category', totalMinutes: { $sum: '$reducedDuration' } } },
-  ]);
   const categoryHours = {};
   categoryHoursAggregate.forEach((item) => {
     categoryHours[item._id] = Number((item.totalMinutes / 60).toFixed(2));
   });
 
   // Most completed task name
-  const mostCompletedAggregate = await TaskInstance.aggregate([
-    { $match: { status: 'Completed' } },
-    { $group: { _id: '$name', count: { $sum: 1 } } },
-    { $sort: { count: -1 } },
-    { $limit: 1 },
-  ]);
   const mostCompletedTask = mostCompletedAggregate.length > 0 ? mostCompletedAggregate[0]._id : 'None';
 
   // Most missed task name
-  const mostMissedAggregate = await TaskInstance.aggregate([
-    { $match: { status: 'Missed' } },
-    { $group: { _id: '$name', count: { $sum: 1 } } },
-    { $sort: { count: -1 } },
-    { $limit: 1 },
-  ]);
   const mostMissedTask = mostMissedAggregate.length > 0 ? mostMissedAggregate[0]._id : 'None';
 
   // Productivity Score

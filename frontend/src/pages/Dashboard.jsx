@@ -398,7 +398,7 @@ const Dashboard = ({ onEnterFocusMode }) => {
             {countdown ? (
               <div>
                 <span className="text-[9px] uppercase tracking-wider text-neutral-400 font-mono block mb-1">
-                  Task Time Remaining
+                  {currentTask ? 'Task Time Remaining' : 'Next Venture In'}
                 </span>
                 <div className="font-mono text-4xl sm:text-5xl font-bold tracking-widest text-white select-none">
                   {countdown}

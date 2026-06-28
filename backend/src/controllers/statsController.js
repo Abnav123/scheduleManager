@@ -54,18 +54,18 @@ export const getDashboardData = async (req, res, next) => {
     // Ensure today's task instances are created and updated
     await generateDailyTasks(todayStr);
 
-    const stats = await getStatsSummary();
-    const todayTasks = await TaskInstance.find({ date: todayStr }).sort({ startTime: 1 });
-    const todayDiary = await DailyDiary.findOne({ date: todayStr });
-    const todayReflection = await DailyReflection.findOne({ date: todayStr });
-    
-    // Find active goals
     const now = getNowIST().toDate();
-    const activeGoals = await Goal.find({
-      status: 'Active',
-      startDate: { $lte: now },
-      endDate: { $gte: now },
-    });
+    const [stats, todayTasks, todayDiary, todayReflection, activeGoals] = await Promise.all([
+      getStatsSummary(),
+      TaskInstance.find({ date: todayStr }).sort({ startTime: 1 }),
+      DailyDiary.findOne({ date: todayStr }),
+      DailyReflection.findOne({ date: todayStr }),
+      Goal.find({
+        status: 'Active',
+        startDate: { $lte: now },
+        endDate: { $gte: now },
+      })
+    ]);
 
     const dailyQuote = getQuoteForDate(todayStr);
 
@@ -206,9 +206,15 @@ export const getTimelineData = async (req, res, next) => {
     // Ensure tasks are generated and checked for expiration for the target day
     await generateDailyTasks(dateStr);
 
-    const tasks = await TaskInstance.find({ date: dateStr }).sort({ startTime: 1 });
-    const diary = await DailyDiary.findOne({ date: dateStr });
-    const reflection = await DailyReflection.findOne({ date: dateStr });
+    const startOfDay = moment.tz(dateStr, 'Asia/Kolkata').startOf('day').toDate();
+    const endOfDay = moment.tz(dateStr, 'Asia/Kolkata').endOf('day').toDate();
+
+    const [tasks, diary, reflection, achievementsUnlocked] = await Promise.all([
+      TaskInstance.find({ date: dateStr }).sort({ startTime: 1 }),
+      DailyDiary.findOne({ date: dateStr }),
+      DailyReflection.findOne({ date: dateStr }),
+      Achievement.find({ unlockedAt: { $gte: startOfDay, $lte: endOfDay } })
+    ]);
 
     // Compute day summary
     const completed = tasks.filter((t) => t.status === 'Completed');
@@ -234,13 +240,6 @@ export const getTimelineData = async (req, res, next) => {
 
     // Get stable quote for this date
     const dailyQuote = getQuoteForDate(dateStr);
-
-    // Achievements unlocked on this specific day
-    const startOfDay = moment.tz(dateStr, 'Asia/Kolkata').startOf('day').toDate();
-    const endOfDay = moment.tz(dateStr, 'Asia/Kolkata').endOf('day').toDate();
-    const achievementsUnlocked = await Achievement.find({
-      unlockedAt: { $gte: startOfDay, $lte: endOfDay },
-    });
 
     // Formatting date label: e.g. "28 June 2026"
     const formattedDateLabel = moment.tz(dateStr, 'YYYY-MM-DD', 'Asia/Kolkata').format('DD MMMM YYYY');
