@@ -232,6 +232,8 @@ export const addOrUpdateOverride = async (req, res, next) => {
       timetable.overrides.push({ date, tasks });
     }
 
+    timetable.markModified('overrides');
+
     // Delete future task instances for this specific date
     // so they regenerate using the new override
     const now = moment().tz('Asia/Kolkata').toDate();

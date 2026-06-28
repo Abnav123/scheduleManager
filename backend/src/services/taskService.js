@@ -29,14 +29,6 @@ export const generateDailyTasks = async (dateStr) => {
     await updateStreak();
   }
 
-  // Check if instances already exist
-  let instances = await TaskInstance.find({ date: dateStr }).sort({ startTime: 1 });
-  if (instances.length > 0) {
-    // If they exist, let's run a quick expiration check on them to make sure statuses are fresh
-    await checkAndUpdateExpiredTasksForDate(dateStr);
-    return await TaskInstance.find({ date: dateStr }).sort({ startTime: 1 });
-  }
-
   // Find active timetable for this date
   const targetDate = moment.tz(dateStr, 'Asia/Kolkata').startOf('day').toDate();
   const timetable = await Timetable.findOne({
@@ -52,62 +44,85 @@ export const generateDailyTasks = async (dateStr) => {
   const override = timetable.overrides.find((ov) => ov.date === dateStr);
   const taskTemplates = override ? override.tasks : timetable.defaultSchedule;
 
-  const newInstances = [];
+  // Get existing task instances for this date
+  const existingInstances = await TaskInstance.find({ date: dateStr });
+
   const now = getNowIST();
 
-  for (const template of taskTemplates) {
-    const scheduledStart = parseISTTime(dateStr, template.startTime);
-    const scheduledEnd = parseISTTime(dateStr, template.endTime);
-    const originalDuration = getDiffMinutes(scheduledStart, scheduledEnd);
-
-    let status = 'Upcoming';
-    let punishmentStatus = 'None';
-
-    const startMoment = moment(scheduledStart);
-    const endMoment = moment(scheduledEnd);
-
-    if (now.isAfter(endMoment)) {
-      status = 'Missed';
-      punishmentStatus = 'Pending';
-    } else if (now.isSameOrAfter(startMoment) && now.isSameOrBefore(endMoment)) {
-      // Check if it's in the completion window: max of 5 mins or 3% of task duration
-      const windowMinutes = Math.max(5, originalDuration * 0.03);
-      const startWindow = moment(endMoment).subtract(windowMinutes, 'minutes');
-      if (now.isSameOrAfter(startWindow)) {
-        status = 'Ready To Complete';
-      } else {
-        status = 'In Progress';
+  // Clean up any existing future task instances that are no longer in the template
+  for (const inst of existingInstances) {
+    const isFuture = moment(inst.scheduledStart).isAfter(now);
+    if (isFuture) {
+      const stillExistsInTemplate = taskTemplates.some(
+        (temp) => temp.name === inst.name && 
+                  temp.startTime === inst.startTime && 
+                  temp.endTime === inst.endTime
+      );
+      if (!stillExistsInTemplate) {
+        await TaskInstance.deleteOne({ _id: inst._id });
       }
     }
-
-    newInstances.push({
-      timetableId: timetable._id,
-      name: template.name,
-      category: template.category,
-      date: dateStr,
-      startTime: template.startTime,
-      endTime: template.endTime,
-      scheduledStart,
-      scheduledEnd,
-      punishment: template.punishment,
-      notes: template.notes,
-      status,
-      punishmentStatus,
-      originalDuration,
-      reducedDuration: originalDuration,
-    });
   }
 
-  if (newInstances.length > 0) {
-    instances = await TaskInstance.insertMany(newInstances);
-    // If any tasks were generated as Missed, we should trigger streak updates
-    const hasMissed = instances.some((inst) => inst.status === 'Missed');
-    if (hasMissed) {
-      await updateStreak();
+  // Reload existing instances after cleanup
+  const freshInstances = await TaskInstance.find({ date: dateStr });
+
+  for (const template of taskTemplates) {
+    // Check if this template already has an instance
+    const exists = freshInstances.some(
+      (inst) => inst.name === template.name && 
+                inst.startTime === template.startTime && 
+                inst.endTime === template.endTime
+    );
+
+    if (!exists) {
+      const scheduledStart = parseISTTime(dateStr, template.startTime);
+      const scheduledEnd = parseISTTime(dateStr, template.endTime);
+      const originalDuration = getDiffMinutes(scheduledStart, scheduledEnd);
+
+      let status = 'Upcoming';
+      let punishmentStatus = 'None';
+
+      const startMoment = moment(scheduledStart);
+      const endMoment = moment(scheduledEnd);
+
+      if (now.isAfter(endMoment)) {
+        status = 'Missed';
+        punishmentStatus = 'Pending';
+      } else if (now.isSameOrAfter(startMoment) && now.isSameOrBefore(endMoment)) {
+        // Check if it's in the completion window: max of 5 mins or 3% of task duration
+        const windowMinutes = Math.max(5, originalDuration * 0.03);
+        const startWindow = moment(endMoment).subtract(windowMinutes, 'minutes');
+        if (now.isSameOrAfter(startWindow)) {
+          status = 'Ready To Complete';
+        } else {
+          status = 'In Progress';
+        }
+      }
+
+      await TaskInstance.create({
+        timetableId: timetable._id,
+        name: template.name,
+        category: template.category,
+        date: dateStr,
+        startTime: template.startTime,
+        endTime: template.endTime,
+        scheduledStart,
+        scheduledEnd,
+        punishment: template.punishment,
+        notes: template.notes,
+        status,
+        punishmentStatus,
+        originalDuration,
+        reducedDuration: originalDuration,
+      });
     }
   }
 
-  return instances;
+  // If any new tasks were created, or if we need to check expirations
+  await checkAndUpdateExpiredTasksForDate(dateStr);
+
+  return await TaskInstance.find({ date: dateStr }).sort({ startTime: 1 });
 };
 
 /**
