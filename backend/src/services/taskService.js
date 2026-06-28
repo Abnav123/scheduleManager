@@ -19,14 +19,15 @@ import moment from 'moment-timezone';
  * Lazy creation when user views a day.
  */
 export const generateDailyTasks = async (dateStr) => {
-  // Clean up any orphaned future task instances whose timetable has been deleted
+  // Clean up any orphaned task instances whose timetable has been deleted
   const activeTimetables = await Timetable.find().select('_id');
   const activeIds = activeTimetables.map(t => t._id);
-  const nowDate = getNowIST().toDate();
-  await TaskInstance.deleteMany({
-    timetableId: { $nin: activeIds },
-    scheduledStart: { $gt: nowDate }
+  const deletedRes = await TaskInstance.deleteMany({
+    timetableId: { $nin: activeIds }
   });
+  if (deletedRes.deletedCount > 0) {
+    await updateStreak();
+  }
 
   // Check if instances already exist
   let instances = await TaskInstance.find({ date: dateStr }).sort({ startTime: 1 });
@@ -331,6 +332,21 @@ export const updateStreak = async () => {
   let currentStreak = 0;
   let maxStreak = user.longestStreak || 0;
   
+  // Fetch all task instances in the last 366 days in a single query
+  const oneYearAgo = now.clone().subtract(366, 'days').startOf('day').toDate();
+  const allTasks = await TaskInstance.find({
+    scheduledStart: { $gte: oneYearAgo }
+  });
+
+  // Group task instances by date string in memory
+  const tasksByDate = {};
+  for (const task of allTasks) {
+    if (!tasksByDate[task.date]) {
+      tasksByDate[task.date] = [];
+    }
+    tasksByDate[task.date].push(task);
+  }
+
   // We will scan backwards day by day from today
   let checkDate = now.clone();
   let consecutiveDays = 0;
@@ -338,7 +354,7 @@ export const updateStreak = async () => {
   // To avoid infinite loop, search up to 365 days back
   for (let i = 0; i < 365; i++) {
     const dateStr = checkDate.format('YYYY-MM-DD');
-    const tasks = await TaskInstance.find({ date: dateStr });
+    const tasks = tasksByDate[dateStr] || [];
 
     if (tasks.length > 0) {
       const missedCount = tasks.filter((t) => t.status === 'Missed').length;

@@ -15,6 +15,12 @@ export const saveReflection = async (req, res, next) => {
       throw new Error('Date is required');
     }
 
+    const today = getTodayIST();
+    if (date !== today) {
+      res.status(400);
+      throw new Error('Daily reflections can only be logged or modified on the active day');
+    }
+
     // If reflectionNotes is empty or blank, delete the reflection entry for this date
     if (!reflectionNotes || reflectionNotes.trim() === '') {
       await DailyReflection.findOneAndDelete({ date });

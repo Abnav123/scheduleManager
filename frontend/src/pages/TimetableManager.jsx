@@ -42,32 +42,32 @@ const TimetableCalendar = ({ timetable, selectedDate, onSelectDate }) => {
   };
 
   return (
-    <div className="p-4 border border-vagabond-slate rounded-lg bg-vagabond-dark max-w-sm w-full select-none">
+    <div className="p-4 border-2 border-white bg-[#0e1017] max-w-sm w-full select-none brutalist-card">
       {/* Month Navigation */}
       <div className="flex items-center justify-between mb-3">
         <button
           type="button"
           onClick={prevMonth}
           disabled={currentMonth.clone().subtract(1, 'month').endOf('month').isBefore(startLimit)}
-          className="p-1 hover:bg-vagabond-slate rounded disabled:opacity-30 disabled:hover:bg-transparent text-vagabond-gold text-xs font-bold"
+          className="p-1 hover:bg-neutral-900 border border-white rounded-none disabled:opacity-30 disabled:hover:bg-transparent text-white text-xs font-bold font-mono"
         >
           &larr;
         </button>
-        <span className="font-serif text-xs font-bold uppercase tracking-wider text-vagabond-parchment">
+        <span className="text-xs font-bold uppercase tracking-wider text-white font-mono">
           {currentMonth.format('MMMM YYYY')}
         </span>
         <button
           type="button"
           onClick={nextMonth}
           disabled={currentMonth.clone().add(1, 'month').startOf('month').isAfter(endLimit)}
-          className="p-1 hover:bg-vagabond-slate rounded disabled:opacity-30 disabled:hover:bg-transparent text-vagabond-gold text-xs font-bold"
+          className="p-1 hover:bg-neutral-900 border border-white rounded-none disabled:opacity-30 disabled:hover:bg-transparent text-white text-xs font-bold font-mono"
         >
           &rarr;
         </button>
       </div>
 
       {/* Weekdays */}
-      <div className="grid grid-cols-7 gap-1 text-center text-[10px] uppercase font-mono text-vagabond-brown mb-1.5">
+      <div className="grid grid-cols-7 gap-1 text-center text-[10px] uppercase font-mono text-neutral-400 mb-1.5 font-bold">
         {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(d => (
           <div key={d}>{d}</div>
         ))}
@@ -90,27 +90,27 @@ const TimetableCalendar = ({ timetable, selectedDate, onSelectDate }) => {
               type="button"
               onClick={() => isSelectable && onSelectDate(dateStr)}
               disabled={!isSelectable}
-              className={`h-8 rounded text-[10px] flex flex-col items-center justify-center relative font-mono transition-all duration-200 ${
-                !isCurrentMonth ? 'text-gray-600 opacity-40' : ''
+              className={`h-8 rounded-none text-[10px] flex flex-col items-center justify-center relative font-mono transition-all duration-100 ${
+                !isCurrentMonth ? 'text-neutral-500 opacity-40' : ''
               } ${
                 isSelected 
-                  ? 'bg-vagabond-gold text-black font-bold' 
+                  ? 'bg-white text-black font-bold' 
                   : isSelectable 
-                    ? 'hover:bg-vagabond-slate text-vagabond-parchment' 
-                    : 'text-gray-500 cursor-not-allowed opacity-20'
+                    ? 'hover:bg-neutral-900 text-white border border-white' 
+                    : 'text-neutral-600 cursor-not-allowed opacity-20'
               }`}
             >
               <span>{d.date()}</span>
               {overrideExists && (
-                <span className={`absolute bottom-0.5 w-1 h-1 rounded-full ${isSelected ? 'bg-black' : 'bg-vagabond-gold'}`}></span>
+                <span className={`absolute bottom-0.5 w-1.5 h-1.5 rounded-full ${isSelected ? 'bg-black' : 'bg-white'}`}></span>
               )}
             </button>
           );
         })}
       </div>
-      <div className="mt-3 flex items-center justify-between text-[8px] text-vagabond-brown font-mono border-t border-vagabond-slate pt-2">
+      <div className="mt-3 flex items-center justify-between text-[8px] text-neutral-400 font-mono border-t-2 border-white pt-2 font-bold">
         <span className="flex items-center gap-1">
-          <span className="w-1.5 h-1.5 rounded-full bg-vagabond-gold"></span> Override Set
+          <span className="w-2 h-2 rounded-full bg-white"></span> Override Set
         </span>
         <span>Today: {today.format('DD MMM')}</span>
       </div>
@@ -161,7 +161,7 @@ const TimetableManager = () => {
       setError('');
     } catch (err) {
       console.error(err);
-      setError('Failed to fetch timetables.');
+      setError('Failed to fetch blueprints.');
     } finally {
       setLoading(false);
     }
@@ -369,7 +369,7 @@ const TimetableManager = () => {
     setOverrideTasks(overrideTasks.filter((_, i) => i !== index));
   };
 
-  // Save Override back to database (with single vs all days scope toggle)
+  // Save Override back to database
   const handleSaveOverride = async () => {
     if (!overrideDate) {
       setOverrideError('Select date first');
@@ -378,13 +378,13 @@ const TimetableManager = () => {
 
     try {
       if (applyScope === 'all') {
-        // Update the master blueprint for all days of the schedule
+        // Master blueprint daily master update
         await api.put(`/timetables/${selectedTimetable._id}`, {
           defaultSchedule: overrideTasks,
         });
         alert('Schedule blueprint updated for all days successfully.');
       } else {
-        // Update only this specific date override
+        // Date-specific override
         await api.post(`/timetables/${selectedTimetable._id}/overrides`, {
           date: overrideDate,
           tasks: overrideTasks,
@@ -400,28 +400,26 @@ const TimetableManager = () => {
   };
 
   return (
-    <div className="flex flex-col gap-8 max-w-5xl mx-auto">
+    <div className="flex flex-col gap-8 max-w-5xl mx-auto text-white">
       {/* Description Segment */}
-      <section className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-vagabond-slate pb-4">
+      <section className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b-2 border-white pb-4">
         <div>
-          <p className="text-xs text-vagabond-brown uppercase tracking-wider font-mono">Discipline Architecture</p>
-          <h2 className="text-2xl font-serif font-bold text-vagabond-gold">Timetable & Overrides Manager</h2>
+          <p className="text-xs text-neutral-400 uppercase tracking-wider font-mono font-bold">Discipline Blueprints</p>
+          <h2 className="text-2xl font-bold font-mono">Timetable blueprints</h2>
         </div>
         <button
           onClick={() => {
             setShowAddForm(!showAddForm);
             setShowOverrideForm(false);
           }}
-          className="flex items-center gap-2 px-4 py-2 border border-vagabond-gold rounded text-xs uppercase tracking-widest font-bold hover:bg-vagabond-gold hover:text-black font-serif transition-all duration-300"
+          className={showAddForm ? 'btn-red' : 'btn-blue'}
         >
-          {showAddForm ? <X size={14} /> : <Plus size={14} />}
-          <span>{showAddForm ? 'Cancel Creation' : 'New Schedule'}</span>
+          {showAddForm ? 'Cancel Creation' : 'New blueprint'}
         </button>
       </section>
 
-      {/* ERROR CALLOUTS */}
       {error && (
-        <div className="p-4 border border-vagabond-red bg-vagabond-red bg-opacity-10 rounded text-xs text-vagabond-red font-serif flex items-center gap-2">
+        <div className="p-4 border-2 border-white bg-[#ff0000] text-white text-xs flex items-center gap-2 font-mono font-bold animate-fade-in shadow-[2px_2px_0px_0px_rgba(255,255,255,1)]">
           <AlertCircle size={16} />
           <span>{error}</span>
         </div>
@@ -429,71 +427,71 @@ const TimetableManager = () => {
 
       {/* 1. ADD TIMETABLE FORM */}
       {showAddForm && (
-        <form onSubmit={handleCreateTimetable} className="p-6 border border-vagabond-slate rounded-lg bg-vagabond-charcoal flex flex-col gap-6 animate-fade-in">
-          <h3 className="font-serif text-lg text-vagabond-gold border-b border-vagabond-slate pb-2">Create New Path Schedule</h3>
+        <form onSubmit={handleCreateTimetable} className="p-6 border-2 border-white bg-[#0e1017] brutalist-card flex flex-col gap-6 animate-fade-in">
+          <h3 className="text-lg font-bold border-b-2 border-white pb-2 font-mono">Formulate blueprint</h3>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-serif uppercase tracking-widest text-vagabond-brown">Schedule Name</label>
+            <div className="flex flex-col gap-1.5 font-mono">
+              <label className="text-xs uppercase tracking-widest text-white font-bold">Blueprint name</label>
               <input
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="e.g. Master the Sword v1"
-                className="px-3 py-2 rounded border border-vagabond-slate bg-vagabond-dark text-sm text-vagabond-parchment focus:outline-none focus:border-vagabond-gold"
+                placeholder="e.g. Navigation Tasks v1"
+                className="w-full bg-[#0e1017] text-white border-2 border-white"
               />
             </div>
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-serif uppercase tracking-widest text-vagabond-brown">Start Date</label>
+            <div className="flex flex-col gap-1.5 font-mono">
+              <label className="text-xs uppercase tracking-widest text-white font-bold">Start Date</label>
               <input
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
-                className="px-3 py-2 rounded border border-vagabond-slate bg-vagabond-dark text-sm text-vagabond-parchment focus:outline-none focus:border-vagabond-gold"
+                className="w-full bg-[#0e1017] text-white border-2 border-white"
               />
             </div>
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-serif uppercase tracking-widest text-vagabond-brown">End Date</label>
+            <div className="flex flex-col gap-1.5 font-mono">
+              <label className="text-xs uppercase tracking-widest text-white font-bold">End Date</label>
               <input
                 type="date"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
-                className="px-3 py-2 rounded border border-vagabond-slate bg-vagabond-dark text-sm text-vagabond-parchment focus:outline-none focus:border-vagabond-gold"
+                className="w-full bg-[#0e1017] text-white border-2 border-white"
               />
             </div>
           </div>
 
           {startDate && endDate && (
-            <div className="p-4 border border-vagabond-gold border-opacity-20 bg-vagabond-gold bg-opacity-5 rounded text-xs text-vagabond-parchment font-serif mb-2 flex flex-col gap-1.5 border-dashed">
-              <span className="font-bold text-vagabond-gold uppercase tracking-wider text-[10px]">Define Your Daily Schedule Blueprint</span>
-              <p className="text-opacity-80">
-                Please define the tasks for this timetable. For each task, you must provide:
+            <div className="p-4 border-2 border-white bg-[#ffff00] bg-opacity-10 text-xs text-white mb-2 flex flex-col gap-1.5 border-dashed font-mono shadow-[2px_2px_0px_0px_rgba(255,255,255,1)]">
+              <span className="font-bold uppercase tracking-wider text-[10px]">Blueprint Tasks Details</span>
+              <p>
+                Define the crewmate subtasks below. For each subtask, you must provide:
               </p>
-              <ul className="list-disc pl-4 flex flex-col gap-0.5 text-opacity-80">
-                <li><strong className="text-vagabond-gold">Task Name</strong> to describe the discipline focus.</li>
-                <li><strong className="text-vagabond-gold">Mandatory Start & End Times</strong> (time slots).</li>
-                <li><strong className="text-vagabond-gold">Mandatory Punishment</strong> (penalty cost if failed/missed).</li>
+              <ul className="list-disc pl-4 flex flex-col gap-0.5 font-bold">
+                <li>Subtask Name (task descriptor).</li>
+                <li>Mandatory Start & End Times (time slots).</li>
+                <li>Sabotage Penalty (punishment parameter).</li>
               </ul>
             </div>
           )}
 
           {/* Subtask Template Builder */}
-          <div className="border border-vagabond-slate rounded-lg p-5 bg-vagabond-dark flex flex-col gap-4">
-            <h4 className="font-serif text-sm text-vagabond-gold border-b border-vagabond-slate pb-2">Add Schedule Task Templates</h4>
-            {taskError && <p className="text-xs text-vagabond-red font-serif">{taskError}</p>}
+          <div className="border-2 border-white p-5 bg-[#0e1017] brutalist-card flex flex-col gap-4">
+            <h4 className="text-sm font-bold border-b-2 border-white pb-2 font-mono">Add tasks template</h4>
+            {taskError && <p className="text-xs text-red-500 font-mono font-bold">{taskError}</p>}
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               <input
                 type="text"
-                placeholder="Task Name (e.g. Meditations)"
+                placeholder="Subtask Name (e.g. Swiping Card)"
                 value={taskName}
                 onChange={(e) => setTaskName(e.target.value)}
-                className="px-3 py-1.5 rounded border border-vagabond-slate bg-vagabond-charcoal text-xs text-vagabond-parchment focus:outline-none focus:border-vagabond-gold"
+                className="w-full bg-[#0e1017] border-2 border-white"
               />
               <select
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
-                className="px-3 py-1.5 rounded border border-vagabond-slate bg-vagabond-charcoal text-xs text-vagabond-parchment focus:outline-none focus:border-vagabond-gold"
+                className="border-2 border-white focus:ring-0 text-xs bg-[#0e1017] text-white py-1.5 rounded-none font-bold font-mono"
               >
                 {['DSA', 'Development', 'College', 'Health', 'Reading', 'Personal', 'Custom'].map((cat) => (
                   <option key={cat} value={cat}>{cat}</option>
@@ -501,27 +499,27 @@ const TimetableManager = () => {
               </select>
               <input
                 type="text"
-                placeholder="Mandatory Punishment (e.g. 50 Burpees)"
+                placeholder="Sabotage Penalty (e.g. Empty Garbage)"
                 value={punishment}
                 onChange={(e) => setPunishment(e.target.value)}
-                className="px-3 py-1.5 rounded border border-vagabond-slate bg-vagabond-charcoal text-xs text-vagabond-parchment focus:outline-none focus:border-vagabond-gold"
+                className="w-full bg-[#0e1017] border-2 border-white"
               />
-              <div className="flex flex-col gap-1 w-full">
-                <label className="text-[10px] uppercase font-serif tracking-wider text-vagabond-brown">Start Time</label>
+              <div className="flex flex-col gap-1 w-full font-mono">
+                <label className="text-[10px] uppercase font-bold text-neutral-400">Start Time</label>
                 <input
                   ref={startTimeRef}
                   type="time"
-                  defaultValue={moment().add(3, 'minutes').format('HH:mm')}
-                  className="px-3 py-1.5 rounded border border-vagabond-slate bg-vagabond-charcoal text-xs text-vagabond-parchment focus:outline-none focus:border-vagabond-gold w-full"
+                  defaultValue={moment().add(5, 'minutes').format('HH:mm')}
+                  className="w-full bg-[#0e1017] border-2 border-white text-white"
                 />
               </div>
-              <div className="flex flex-col gap-1 w-full">
-                <label className="text-[10px] uppercase font-serif tracking-wider text-vagabond-brown">End Time</label>
+              <div className="flex flex-col gap-1 w-full font-mono">
+                <label className="text-[10px] uppercase font-bold text-neutral-400">End Time</label>
                 <input
                   ref={endTimeRef}
                   type="time"
-                  defaultValue={moment().add(63, 'minutes').format('HH:mm')}
-                  className="px-3 py-1.5 rounded border border-vagabond-slate bg-vagabond-charcoal text-xs text-vagabond-parchment focus:outline-none focus:border-vagabond-gold w-full"
+                  defaultValue={moment().add(65, 'minutes').format('HH:mm')}
+                  className="w-full bg-[#0e1017] border-2 border-white text-white"
                 />
               </div>
               <input
@@ -529,19 +527,19 @@ const TimetableManager = () => {
                 placeholder="Notes (optional)"
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                className="px-3 py-1.5 rounded border border-vagabond-slate bg-vagabond-charcoal text-xs text-vagabond-parchment focus:outline-none focus:border-vagabond-gold"
+                className="w-full bg-[#0e1017] border-2 border-white"
               />
               <div className="flex flex-col gap-1 w-full md:col-span-3 mt-1.5">
-                <label className="flex items-center gap-2 text-xs cursor-pointer select-none text-vagabond-parchment">
+                <label className="flex items-center gap-2 text-xs cursor-pointer select-none text-white font-bold font-mono">
                   <input
                     type="checkbox"
                     checked={tempTaskApply === 'all'}
                     onChange={(e) => setTempTaskApply(e.target.checked ? 'all' : 'today')}
-                    className="w-4 h-4 accent-white cursor-pointer border border-vagabond-slate rounded"
+                    className="w-4 h-4 cursor-pointer accent-white"
                   />
-                  <span className="font-serif">Apply task to all days of schedule (Default Blueprint)</span>
+                  <span>Apply task to all days (Default blueprint)</span>
                 </label>
-                <p className="text-[10px] text-vagabond-brown italic mt-0.5 ml-6">
+                <p className="text-[10px] text-neutral-400 italic mt-0.5 ml-6 font-mono font-bold">
                   Uncheck to apply this task to today only ({moment().format('DD MMM')}).
                 </p>
               </div>
@@ -550,37 +548,43 @@ const TimetableManager = () => {
             <button
               type="button"
               onClick={handleAddTempTask}
-              className="flex items-center justify-center gap-1.5 self-end px-4 py-1.5 bg-vagabond-gold text-black rounded text-xs uppercase font-bold font-serif shadow-gold-glow"
+              className="btn-blue flex items-center justify-center gap-1.5 self-end"
             >
               <Plus size={12} />
-              <span>Add Task Template</span>
+              <span>Add tasks blueprint</span>
             </button>
 
             {/* List of currently added task templates in build list */}
-            <div className="mt-4 border-t border-vagabond-slate pt-4">
-              <span className="text-[10px] uppercase font-mono text-vagabond-brown block mb-2">Build List ({defaultSchedule.length} tasks)</span>
+            <div className="mt-4 border-t-2 border-white pt-4">
+              <span className="text-[10px] uppercase font-mono text-neutral-400 block mb-2 font-bold">Tasks List ({defaultSchedule.length} tasks)</span>
               {defaultSchedule.length > 0 ? (
                 <div className="flex flex-col gap-2">
                   {defaultSchedule.map((t, idx) => (
-                    <div key={idx} className="flex items-center justify-between p-3 border border-vagabond-slate rounded bg-vagabond-charcoal text-xs">
+                    <div key={idx} className="flex items-center justify-between p-3 border-2 border-white bg-[#0e1017] text-xs font-mono">
                       <div>
-                        <strong>{t.name}</strong> <span className="text-vagabond-gold font-serif">({t.category})</span>
+                        <strong>{t.name}</strong> <span className="text-neutral-400">({t.category})</span>
                         {t.applyTo === 'today' ? (
-                          <span className="ml-2 text-[9px] px-1.5 py-0.5 rounded border border-vagabond-red text-vagabond-red font-mono uppercase font-bold">Today Only</span>
+                          <span className="ml-2 text-[9px] px-1.5 py-0.5 bg-[#ff0000] text-white border border-white font-mono uppercase font-bold shadow-[1px_1px_0px_0px_rgba(255,255,255,1)]">Today Only</span>
                         ) : (
-                          <span className="ml-2 text-[9px] px-1.5 py-0.5 rounded border border-vagabond-slate text-vagabond-brown font-mono uppercase font-bold">All Days</span>
+                          <span className="ml-2 text-[9px] px-1.5 py-0.5 bg-neutral-700 text-white border border-white font-mono uppercase font-bold shadow-[1px_1px_0px_0px_rgba(255,255,255,1)]">All Days</span>
                         )}
-                        <div className="text-[10px] text-vagabond-brown mt-0.5">{t.startTime} - {t.endTime} | Punishment: {t.punishment}</div>
+                        <div className="text-[10px] text-neutral-400 mt-0.5">
+                          {t.startTime} - {t.endTime} | Penalty: {t.punishment}
+                        </div>
                       </div>
-                      <button type="button" onClick={() => handleRemoveTempTask(idx)} className="text-vagabond-red hover:text-red-400 p-1">
+                      <button 
+                        type="button" 
+                        onClick={() => handleRemoveTempTask(idx)} 
+                        className="text-red-500 hover:bg-neutral-900 p-1 border-2 border-transparent hover:border-white"
+                      >
                         <Trash2 size={14} />
                       </button>
                     </div>
                   ))}
                 </div>
               ) : (
-                <p className="text-xs text-vagabond-brown italic font-serif py-4 text-center border border-dashed border-vagabond-slate border-opacity-35 rounded">
-                  No task templates added yet. Fill out the fields above and click "+ Add Task Template".
+                <p className="text-xs text-neutral-500 italic py-4 text-center border-2 border-dashed border-neutral-600 font-mono font-bold">
+                  No tasks blueprint formulated yet. Fill out the fields above.
                 </p>
               )}
             </div>
@@ -588,30 +592,30 @@ const TimetableManager = () => {
 
           <button
             type="submit"
-            className="self-end px-6 py-2.5 bg-[#1a1a1a] hover:bg-vagabond-gold hover:text-black text-white font-serif uppercase tracking-widest text-xs rounded font-bold transition-all duration-300 shadow-zen border border-vagabond-gold"
+            className="btn-green self-end"
           >
-            Save Timetable
+            Save Blueprint
           </button>
         </form>
       )}
 
       {/* 2. OVERRIDE EDITOR FORM */}
       {showOverrideForm && selectedTimetable && (
-        <div className="p-6 border border-vagabond-gold rounded-lg bg-vagabond-charcoal flex flex-col gap-6 animate-fade-in">
-          <div className="flex items-center justify-between border-b border-vagabond-slate pb-2">
-            <h3 className="font-serif text-lg text-vagabond-gold">Date-Specific Overrides for: {selectedTimetable.name}</h3>
-            <button onClick={() => { setShowOverrideForm(false); setSelectedTimetable(null); }} className="text-gray-400 hover:text-white">
+        <div className="p-6 border-2 border-white bg-[#0e1017] brutalist-card flex flex-col gap-6 animate-fade-in">
+          <div className="flex items-center justify-between border-b-2 border-white pb-2 font-mono">
+            <h3 className="text-lg font-bold">Date Overrides: {selectedTimetable.name}</h3>
+            <button onClick={() => { setShowOverrideForm(false); setSelectedTimetable(null); }} className="text-white hover:bg-neutral-900 p-1">
               <X size={18} />
             </button>
           </div>
 
           {overrideError && (
-            <p className="text-xs text-vagabond-red font-serif">{overrideError}</p>
+            <p className="text-xs text-red-500 font-mono font-bold">{overrideError}</p>
           )}
 
-          <div className="flex flex-col md:flex-row gap-6 items-start">
-            <div className="flex flex-col gap-2 w-full md:w-auto">
-              <label className="text-xs font-serif uppercase tracking-widest text-vagabond-brown">Select Date via Calendar</label>
+          <div className="flex flex-col lg:flex-row gap-6 items-center lg:items-start">
+            <div className="flex flex-col gap-2 w-full lg:w-auto font-mono items-center lg:items-start">
+              <label className="text-xs uppercase tracking-widest text-white font-bold">Select Date via Calendar</label>
               <TimetableCalendar 
                 timetable={selectedTimetable}
                 selectedDate={overrideDate}
@@ -621,8 +625,8 @@ const TimetableManager = () => {
 
             <div className="flex-1 w-full">
               {overrideDate ? (
-                <div className="border border-vagabond-slate rounded-lg p-5 bg-vagabond-dark flex flex-col gap-4">
-                  <h4 className="font-serif text-xs text-vagabond-gold border-b border-vagabond-slate pb-1.5">
+                <div className="border-2 border-white p-5 bg-[#0e1017] brutalist-card flex flex-col gap-4">
+                  <h4 className="text-sm font-bold border-b-2 border-white pb-1.5 font-mono">
                     Tasks for {overrideDate} ({overrideTasks.length} tasks)
                   </h4>
                   
@@ -633,12 +637,12 @@ const TimetableManager = () => {
                       placeholder="Override Task Name"
                       value={taskName}
                       onChange={(e) => setTaskName(e.target.value)}
-                      className="px-3 py-1.5 rounded border border-vagabond-slate bg-vagabond-charcoal text-xs text-vagabond-parchment focus:outline-none"
+                      className="w-full bg-[#0e1017] border-2 border-white text-white"
                     />
                     <select
                       value={category}
                       onChange={(e) => setCategory(e.target.value)}
-                      className="px-3 py-1.5 rounded border border-vagabond-slate bg-vagabond-charcoal text-xs text-vagabond-parchment focus:outline-none"
+                      className="border-2 border-white text-xs bg-[#0e1017] text-white py-1 rounded-none font-bold font-mono"
                     >
                       {['DSA', 'Development', 'College', 'Health', 'Reading', 'Personal', 'Custom'].map((cat) => (
                         <option key={cat} value={cat}>{cat}</option>
@@ -649,24 +653,24 @@ const TimetableManager = () => {
                       placeholder="Override Punishment"
                       value={punishment}
                       onChange={(e) => setPunishment(e.target.value)}
-                      className="px-3 py-1.5 rounded border border-vagabond-slate bg-vagabond-charcoal text-xs text-vagabond-parchment focus:outline-none"
+                      className="w-full bg-[#0e1017] border-2 border-white text-white"
                     />
-                    <div className="flex flex-col gap-1 w-full">
-                      <label className="text-[9px] uppercase tracking-wider text-vagabond-brown">Start Time</label>
+                    <div className="flex flex-col gap-1 w-full font-mono">
+                      <label className="text-[9px] uppercase font-bold text-neutral-400">Start Time</label>
                       <input
                         ref={overrideStartTimeRef}
                         type="time"
-                        defaultValue={moment().add(3, 'minutes').format('HH:mm')}
-                        className="px-3 py-1.5 rounded border border-vagabond-slate bg-vagabond-charcoal text-xs text-vagabond-parchment focus:outline-none w-full"
+                        defaultValue={moment().add(5, 'minutes').format('HH:mm')}
+                        className="w-full bg-[#0e1017] border-2 border-white text-white"
                       />
                     </div>
-                    <div className="flex flex-col gap-1 w-full">
-                      <label className="text-[9px] uppercase tracking-wider text-vagabond-brown">End Time</label>
+                    <div className="flex flex-col gap-1 w-full font-mono">
+                      <label className="text-[9px] uppercase font-bold text-neutral-400">End Time</label>
                       <input
                         ref={overrideEndTimeRef}
                         type="time"
-                        defaultValue={moment().add(63, 'minutes').format('HH:mm')}
-                        className="px-3 py-1.5 rounded border border-vagabond-slate bg-vagabond-charcoal text-xs text-vagabond-parchment focus:outline-none w-full"
+                        defaultValue={moment().add(65, 'minutes').format('HH:mm')}
+                        className="w-full bg-[#0e1017] border-2 border-white text-white"
                       />
                     </div>
                     <input
@@ -674,14 +678,14 @@ const TimetableManager = () => {
                       placeholder="Notes (optional)"
                       value={notes}
                       onChange={(e) => setNotes(e.target.value)}
-                      className="px-3 py-1.5 rounded border border-vagabond-slate bg-vagabond-charcoal text-xs text-vagabond-parchment focus:outline-none"
+                      className="w-full bg-[#0e1017] border-2 border-white text-white"
                     />
                   </div>
 
                   <button
                     type="button"
                     onClick={handleAddOverrideTask}
-                    className="self-end px-3 py-1.5 bg-vagabond-gold text-black rounded text-xs uppercase font-bold font-serif shadow-gold-glow"
+                    className="btn-blue self-end"
                   >
                     Add / Replace Task Override
                   </button>
@@ -690,33 +694,37 @@ const TimetableManager = () => {
                   <div className="flex flex-col gap-2 mt-2">
                     {overrideTasks.length > 0 ? (
                       overrideTasks.map((t, idx) => (
-                        <div key={idx} className="flex items-center justify-between p-3 border border-vagabond-slate rounded bg-vagabond-charcoal text-xs">
+                        <div key={idx} className="flex items-center justify-between p-3 border-2 border-white bg-[#0e1017] text-xs font-mono">
                           <div>
-                            <strong>{t.name}</strong> <span className="text-vagabond-gold">({t.category})</span>
-                            <div className="text-[10px] text-vagabond-brown mt-0.5">{t.startTime} - {t.endTime} | Punishment: {t.punishment}</div>
+                            <strong>{t.name}</strong> <span className="text-neutral-400">({t.category})</span>
+                            <div className="text-[10px] text-neutral-400 mt-0.5">{t.startTime} - {t.endTime} | Penalty: {t.punishment}</div>
                           </div>
-                          <button type="button" onClick={() => handleRemoveOverrideTask(idx)} className="text-vagabond-red hover:text-red-400 p-1">
+                          <button 
+                            type="button" 
+                            onClick={() => handleRemoveOverrideTask(idx)} 
+                            className="text-red-500 hover:bg-neutral-900 p-1 border-2 border-transparent hover:border-white"
+                          >
                             <Trash2 size={14} />
                           </button>
                         </div>
                       ))
                     ) : (
-                      <p className="text-xs text-vagabond-brown italic text-center py-4">No tasks scheduled. Today is neutral rest.</p>
+                      <p className="text-xs text-neutral-500 italic text-center py-4 font-mono font-bold">No tasks active. Today is neutral rest.</p>
                     )}
                   </div>
 
                   {/* Scope Selection */}
-                  <div className="flex flex-col gap-2 mt-4 p-4 border border-vagabond-slate rounded bg-vagabond-charcoal">
-                    <label className="flex items-center gap-2 text-xs cursor-pointer select-none text-vagabond-parchment">
+                  <div className="flex flex-col gap-2 mt-4 p-4 border-2 border-white bg-[#0e1017] font-mono">
+                    <label className="flex items-center gap-2 text-xs cursor-pointer select-none text-white font-bold">
                       <input
                         type="checkbox"
                         checked={applyScope === 'all'}
                         onChange={(e) => setApplyScope(e.target.checked ? 'all' : 'single')}
-                        className="w-4 h-4 accent-white cursor-pointer border border-vagabond-slate rounded"
+                        className="w-4 h-4 cursor-pointer accent-white"
                       />
-                      <span className="font-serif">Apply these changes to all days of this schedule (Update Blueprint)</span>
+                      <span>Apply changes to all days of schedule (Update Blueprint)</span>
                     </label>
-                    <p className="text-[10px] text-vagabond-brown italic mt-0.5 ml-6">
+                    <p className="text-[10px] text-neutral-400 italic mt-0.5 ml-6">
                       Uncheck to apply changes only to {overrideDate} (Date Override).
                     </p>
                   </div>
@@ -724,14 +732,14 @@ const TimetableManager = () => {
                   <button
                     type="button"
                     onClick={handleSaveOverride}
-                    className="self-end px-5 py-2 bg-vagabond-gold text-black rounded text-xs uppercase tracking-widest font-bold font-serif mt-4"
+                    className="btn-green self-end mt-4"
                   >
                     Save Override Settings
                   </button>
                 </div>
               ) : (
-                <div className="p-8 text-center border border-dashed border-vagabond-slate rounded-lg text-vagabond-brown font-serif italic text-sm">
-                  Click on an active date in the calendar to load and override its schedule.
+                <div className="p-8 text-center border-2 border-dashed border-neutral-600 bg-[#0e1017] text-neutral-400 italic text-sm font-mono font-bold">
+                  Click on an active date in the calendar to override its schedule.
                 </div>
               )}
             </div>
@@ -741,37 +749,37 @@ const TimetableManager = () => {
 
       {/* 3. LIST OF ALL TIMETABLES */}
       <section className="flex flex-col gap-4">
-        <h3 className="font-serif text-sm uppercase tracking-wider text-vagabond-gold">Active and Saved Paths</h3>
+        <h3 className="text-sm uppercase tracking-wider text-white font-bold font-mono">Active Blueprints</h3>
         {loading ? (
-          <div className="text-center py-8 text-sm italic text-vagabond-brown font-serif">Loading timetable structures...</div>
+          <div className="text-center py-8 text-sm italic text-neutral-400 font-mono">Loading blueprints...</div>
         ) : timetables.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {timetables.map((t) => {
               const startFormatted = moment(t.startDate).format('DD MMM YYYY');
               const endFormatted = moment(t.endDate).format('DD MMM YYYY');
               return (
-                <div key={t._id} className="p-5 border border-vagabond-slate rounded-lg bg-vagabond-charcoal flex flex-col justify-between gap-4 shadow-zen">
+                <div key={t._id} className="p-5 border-2 border-white bg-[#0e1017] brutalist-card flex flex-col justify-between gap-4">
                   <div>
-                    <h4 className="font-serif text-lg font-bold text-transparent bg-clip-text bg-gradient-to-r from-white to-vagabond-parchment">{t.name}</h4>
-                    <span className="text-[10px] font-mono text-vagabond-brown flex items-center gap-1.5 mt-1.5">
+                    <h4 className="text-lg font-bold text-white font-mono">{t.name}</h4>
+                    <span className="text-[10px] font-mono text-neutral-400 flex items-center gap-1.5 mt-1.5 font-bold">
                       <Calendar size={12} />
                       {startFormatted} — {endFormatted}
                     </span>
-                    <p className="text-xs text-vagabond-brown mt-3">
-                      This schedule runs <strong>{t.defaultSchedule.length} default tasks</strong> daily, with <strong>{t.overrides.length} date-specific overrides</strong> configured.
+                    <p className="text-xs text-neutral-400 mt-3 font-mono">
+                      Runs <strong>{t.defaultSchedule.length} default tasks</strong> daily, with <strong>{t.overrides.length} date overrides</strong>.
                     </p>
                   </div>
 
-                  <div className="flex items-center justify-between border-t border-vagabond-slate pt-4">
+                  <div className="flex items-center justify-between border-t-2 border-white pt-4">
                     <button
                       onClick={() => handleSelectOverrideTimetable(t)}
-                      className="px-3 py-1.5 border border-vagabond-gold text-vagabond-gold rounded text-xs hover:bg-vagabond-gold hover:text-black font-serif transition-all duration-300"
+                      className="btn-blue"
                     >
                       Configure Overrides
                     </button>
                     <button
                       onClick={() => handleDeleteTimetable(t._id)}
-                      className="text-vagabond-red hover:text-red-400 p-1.5 transition-colors"
+                      className="text-red-500 hover:bg-neutral-900 p-1.5 border-2 border-transparent hover:border-white"
                       title="Delete Timetable"
                     >
                       <Trash2 size={16} />
@@ -782,8 +790,8 @@ const TimetableManager = () => {
             })}
           </div>
         ) : (
-          <div className="p-8 text-center border border-dashed border-vagabond-slate rounded-lg text-vagabond-brown font-serif italic text-sm">
-            No timetables scheduled yet. Click "New Schedule" above to build your daily path!
+          <div className="p-8 text-center border-2 border-dashed border-neutral-600 bg-[#0e1017] text-neutral-400 italic text-sm font-mono font-bold">
+            No timetables scheduled yet. Click "New blueprint" above to create one.
           </div>
         )}
       </section>

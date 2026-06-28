@@ -39,44 +39,38 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#070707] relative p-6">
-      {/* Background Subtle texture */}
-      <div className="absolute inset-0 bg-rice-paper opacity-[0.02] pointer-events-none"></div>
-
-      {/* Decorative calligraphic scroll container */}
-      <div className="w-full max-w-md parchment-card px-8 py-10 rounded border-2 border-vagabond-brown relative select-none animate-scroll-unfurl">
-        {/* Scroll Wooden rollers styling details */}
-        <div className="absolute -top-3 left-10 right-10 h-1.5 bg-[#4a3b2c] rounded-full"></div>
-        <div className="absolute -bottom-3 left-10 right-10 h-1.5 bg-[#4a3b2c] rounded-full"></div>
-
-        {/* Scroll Heading */}
+    <div className="min-h-screen flex items-center justify-center bg-[#030408] p-6 relative">
+      {/* Decorative brutalist container */}
+      <div className="w-full max-w-md brutalist-card px-8 py-10">
+        
+        {/* Heading */}
         <div className="text-center mb-8">
-          <h2 className="text-3xl font-bold font-serif tracking-widest text-[#1a1a1a] uppercase">
-            ENTER THE PATH
+          <h2 className="text-2xl font-bold font-mono tracking-wider text-white uppercase">
+            SHUTTLE LOGIN
           </h2>
-          <div className="w-24 h-0.5 bg-vagabond-brown mx-auto mt-2"></div>
-          <p className="text-xs text-[#554738] font-serif italic mt-2">
-            "Only the disciplined are truly free."
+          <div className="w-24 h-1 bg-white mx-auto mt-2"></div>
+          <p className="text-xs text-neutral-400 font-mono italic mt-2">
+            "Are you an Impostor or Crewmate?"
           </p>
         </div>
 
         {/* Error Callout */}
         {error && (
-          <div className="mb-6 p-3 bg-opacity-10 bg-vagabond-red border border-vagabond-red rounded text-xs text-[#7d2020] flex items-start gap-2 font-serif font-semibold">
+          <div className="mb-6 p-3 bg-[#ff0000] text-white border-2 border-white text-xs flex items-start gap-2 font-mono font-bold shadow-[2px_2px_0px_0px_rgba(255,255,255,1)]">
             <ShieldAlert size={16} className="flex-shrink-0 mt-0.5" />
             <span>{error}</span>
           </div>
         )}
 
         {/* Login Inputs Form */}
-        <form onSubmit={handleSubmit} className="flex flex-col gap-5 text-[#1a1a1a]">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-5 text-white">
           {/* Username Input */}
           <div className="flex flex-col gap-1">
-            <label className="text-xs font-serif uppercase tracking-widest text-[#554738] font-bold">
-              User Identity
+            <label className="text-xs uppercase tracking-widest text-white font-bold font-mono">
+              Identity Card
             </label>
             <div className="relative flex items-center">
-              <User size={16} className="absolute left-3 text-vagabond-brown" />
+              <User size={16} className="absolute left-3 text-white" />
               <input
                 id="login-username"
                 type="text"
@@ -84,18 +78,18 @@ const Login = () => {
                 onChange={(e) => setUsername(e.target.value)}
                 placeholder="e.g. admin"
                 disabled={isSubmitting}
-                className="w-full pl-9 pr-4 py-2.5 rounded border border-vagabond-parchment-dark bg-white bg-opacity-70 focus:bg-white focus:outline-none focus:border-vagabond-gold focus:ring-1 focus:ring-vagabond-gold text-sm font-sans transition-all duration-200"
+                className="w-full pl-9 pr-4 py-2.5 border-2 border-white text-sm transition-all focus:ring-0 rounded-none bg-[#0e1017] text-white"
               />
             </div>
           </div>
 
           {/* Password Input */}
           <div className="flex flex-col gap-1">
-            <label className="text-xs font-serif uppercase tracking-widest text-[#554738] font-bold">
-              Access Cipher
+            <label className="text-xs uppercase tracking-widest text-white font-bold font-mono">
+              Access Code
             </label>
             <div className="relative flex items-center">
-              <KeyRound size={16} className="absolute left-3 text-vagabond-brown" />
+              <KeyRound size={16} className="absolute left-3 text-white" />
               <input
                 id="login-password"
                 type="password"
@@ -103,7 +97,7 @@ const Login = () => {
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
                 disabled={isSubmitting}
-                className="w-full pl-9 pr-4 py-2.5 rounded border border-vagabond-parchment-dark bg-white bg-opacity-70 focus:bg-white focus:outline-none focus:border-vagabond-gold focus:ring-1 focus:ring-vagabond-gold text-sm font-sans transition-all duration-200"
+                className="w-full pl-9 pr-4 py-2.5 border-2 border-white text-sm transition-all focus:ring-0 rounded-none bg-[#0e1017] text-white"
               />
             </div>
           </div>
@@ -113,15 +107,15 @@ const Login = () => {
             id="login-submit-btn"
             type="submit"
             disabled={isSubmitting}
-            className="w-full py-3 bg-[#1a1a1a] hover:bg-vagabond-gold hover:text-black text-white font-serif uppercase tracking-widest text-sm rounded font-bold transition-all duration-300 shadow-zen"
+            className="btn-blue w-full py-3"
           >
-            {isSubmitting ? 'Verifying spirit...' : 'Unfurl Scheduler'}
+            {isSubmitting ? 'Verifying signature...' : 'Unfurl Scheduler'}
           </button>
         </form>
 
-        {/* Footer citation details */}
-        <p className="text-[10px] text-center text-[#7d6e5c] font-mono mt-8 uppercase tracking-wider">
-          Single Admin Configuration System
+        {/* Footer details */}
+        <p className="text-[10px] text-center text-neutral-500 font-mono mt-8 uppercase tracking-wider font-bold">
+          Spaceship Administration Console
         </p>
       </div>
     </div>

@@ -21,9 +21,9 @@ const ProtectedRoute = ({ children, onEnterFocusMode }) => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-vagabond-dark flex flex-col items-center justify-center gap-4 text-vagabond-gold">
+      <div className="min-h-screen bg-[#030408] flex flex-col items-center justify-center gap-4 text-white">
         <RefreshCw className="animate-spin" size={32} />
-        <span className="font-serif italic text-sm">Verifying your spirit...</span>
+        <span className="font-mono text-sm font-bold">Verifying crewmate signature...</span>
       </div>
     );
   }

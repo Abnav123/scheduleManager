@@ -62,7 +62,7 @@ const FocusMode = ({ task, onExit, onComplete }) => {
       const percent = Math.min(100, Math.max(0, Math.round((elapsed / totalDuration) * 100)));
       setPercentElapsed(percent);
 
-      // Enforce the completion window: max of 5 mins or 3% of task duration
+      // Enforce completion window
       const durationMinutes = end.diff(start, 'minutes');
       const windowMinutes = Math.max(5, durationMinutes * 0.03);
       const startWindow = moment(end).subtract(windowMinutes, 'minutes');
@@ -80,71 +80,68 @@ const FocusMode = ({ task, onExit, onComplete }) => {
   }), []);
 
   return (
-    <div className="fixed inset-0 z-50 bg-[#060606] text-vagabond-parchment flex flex-col items-center justify-between p-12 overflow-hidden select-none select-none">
-      {/* Background Ink Gradient and Rice-paper texture */}
-      <div className="absolute inset-0 bg-rice-paper opacity-[0.02] pointer-events-none"></div>
-      <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black opacity-80 pointer-events-none"></div>
-
+    <div className="fixed inset-0 z-50 bg-[#030408] text-white flex flex-col items-center justify-between p-4 sm:p-12 overflow-hidden select-none border-4 border-white font-mono">
+      
       {/* Top Bar: IST Clock and Shield */}
-      <div className="w-full flex items-center justify-between z-10">
-        <div className="flex items-center gap-2 text-xs tracking-widest text-vagabond-brown font-serif uppercase">
-          <Shield size={14} className="text-vagabond-gold" />
+      <div className="w-full flex flex-col sm:flex-row items-center justify-between z-10 gap-2 text-center">
+        <div className="flex items-center gap-2 text-xs tracking-widest text-white font-mono uppercase font-bold">
+          <Shield size={14} className="text-white" />
           <span>Mind Shield Active</span>
         </div>
-        <div className="font-mono text-lg text-vagabond-gold flex items-center gap-2">
-          <Clock size={18} />
+        <div className="font-mono text-sm sm:text-lg text-white flex items-center gap-2 font-bold">
+          <Clock size={16} />
           <span>{currentTimeIST}</span>
         </div>
       </div>
 
       {/* Main Focus Dashboard */}
-      <div className="w-full max-w-3xl text-center flex flex-col items-center justify-center gap-8 z-10 flex-1">
+      <div className="w-full max-w-3xl text-center flex flex-col items-center justify-center gap-4 sm:gap-8 z-10 flex-1 my-4">
         {task ? (
           <>
             {/* Category Tag */}
-            <span className="px-4 py-1 border border-vagabond-brown border-opacity-30 rounded-full text-xs font-serif uppercase tracking-widest text-vagabond-brown">
+            <span className="px-4 py-1 border-2 border-white bg-[#ffff00] text-black text-xs font-mono font-bold uppercase tracking-widest shadow-[2px_2px_0px_0px_rgba(255,255,255,1)]">
               {task.category}
             </span>
 
             {/* Task Name */}
-            <h2 className="text-4xl sm:text-5xl font-bold font-serif tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-vagabond-parchment via-white to-vagabond-parchment animate-ink-grow">
+            <h2 className="text-2xl sm:text-4xl md:text-5xl font-bold tracking-wider text-white px-2">
               {task.name}
             </h2>
 
             {/* Large Countdown Clock */}
-            <div className="text-6xl sm:text-8xl font-mono tracking-widest text-vagabond-gold font-bold text-shadow-gold select-none my-4">
+            <div className="text-4xl sm:text-6xl md:text-8xl font-mono tracking-widest text-white font-bold select-none my-2">
               {timeLeft || '00:00:00'}
             </div>
 
             {/* Minimalist Progress Bar */}
-            <div className="w-full max-w-xl flex flex-col gap-2">
-              <div className="w-full bg-vagabond-slate bg-opacity-30 h-1 rounded-full overflow-hidden">
+            <div className="w-full max-w-xl flex flex-col gap-2 px-2">
+              <div className="w-full bg-neutral-800 border-2 border-white h-4 overflow-hidden">
                 <div 
-                  className="bg-vagabond-gold h-full rounded-full transition-all duration-1000 ease-out shadow-gold-glow"
+                  className="bg-[#0000ff] border-r border-white h-full transition-all duration-1000 ease-out"
                   style={{ width: `${percentElapsed}%` }}
                 ></div>
               </div>
-              <div className="flex items-center justify-between text-xs text-vagabond-brown font-mono">
+              <div className="flex flex-col sm:flex-row items-center justify-between text-[10px] sm:text-xs text-neutral-400 font-mono font-bold gap-1">
                 <span>Started: {task.startTime}</span>
-                <span>{percentElapsed}% Elapsed</span>
+                <span>{percentElapsed}% Completed</span>
                 <span>End: {task.endTime}</span>
               </div>
             </div>
 
             {/* Completion Button */}
-            <div className="mt-8 flex flex-col items-center gap-3">
+            <div className="mt-4 sm:mt-8 flex flex-col items-center gap-3">
               {canComplete ? (
                 <button
                   onClick={() => onComplete(task._id)}
-                  className="flex items-center gap-3 px-8 py-4 border border-vagabond-gold bg-vagabond-gold text-black rounded font-serif uppercase tracking-widest font-bold hover:bg-opacity-90 hover:scale-105 transition-all duration-300 shadow-gold-glow"
+                  className="btn-green flex items-center gap-3 px-8 py-4"
                 >
                   <Check size={20} />
                   <span>Reach Completion</span>
                 </button>
               ) : (
-                <div className="text-sm text-vagabond-brown italic font-serif flex flex-col items-center gap-2">
-                  <span>The sword cannot be sheathed yet.</span>
-                  <span className="text-xs uppercase tracking-wider text-opacity-70 font-mono">
+                <div className="text-xs sm:text-sm text-neutral-450 font-mono flex flex-col items-center gap-2 font-bold max-w-md px-4">
+                  <span>The task is in progress.</span>
+                  <span className="text-[10px] uppercase tracking-wider text-opacity-70 font-bold">
                     Complete button activates in the final window (3% or 5 mins)
                   </span>
                 </div>
@@ -153,8 +150,8 @@ const FocusMode = ({ task, onExit, onComplete }) => {
           </>
         ) : (
           <div className="flex flex-col items-center gap-4">
-            <h2 className="text-3xl font-serif text-vagabond-brown">Empty Mind</h2>
-            <p className="text-sm italic font-serif text-opacity-80 max-w-md">
+            <h2 className="text-2xl sm:text-3xl font-bold text-neutral-500">Empty Mind</h2>
+            <p className="text-xs sm:text-sm italic font-mono text-neutral-400 max-w-md">
               "When you have no task before you, focus on your breathing. Remain still, clear your thoughts, and prepare your spirit."
             </p>
           </div>
@@ -162,15 +159,13 @@ const FocusMode = ({ task, onExit, onComplete }) => {
       </div>
 
       {/* Bottom Segment: Zen Quote and Exit Button */}
-      <div className="w-full flex flex-col items-center gap-8 z-10">
-        {/* Zen Scroll Styled Quote Card */}
-        <div className="w-full max-w-2xl px-8 py-6 rounded border border-vagabond-brown border-opacity-15 bg-opacity-20 bg-vagabond-charcoal shadow-zen relative overflow-hidden animate-scroll-unfurl">
-          <div className="absolute top-0 bottom-0 left-0 w-1 bg-vagabond-brown"></div>
-          <div className="absolute top-0 bottom-0 right-0 w-1 bg-vagabond-brown"></div>
-          <p className="font-serif italic text-sm text-center text-vagabond-parchment leading-relaxed">
+      <div className="w-full flex flex-col items-center gap-4 sm:gap-8 z-10">
+        {/* Quote Card */}
+        <div className="w-full max-w-2xl px-4 py-4 sm:px-8 sm:py-6 border-2 border-white bg-[#0e1017] brutalist-card relative overflow-hidden text-xs sm:text-sm">
+          <p className="italic text-center text-white leading-relaxed">
             "{task?.notes || defaultQuote.quote}"
           </p>
-          <p className="text-right text-[10px] uppercase font-serif tracking-widest text-vagabond-gold mt-3">
+          <p className="text-right text-[9px] uppercase font-mono tracking-widest text-white font-bold mt-2">
             — {task ? 'Task Focus Note' : defaultQuote.author}
           </p>
         </div>
@@ -178,7 +173,7 @@ const FocusMode = ({ task, onExit, onComplete }) => {
         {/* Exit Button */}
         <button
           onClick={onExit}
-          className="flex items-center gap-2 text-xs uppercase tracking-widest text-vagabond-brown hover:text-vagabond-gold transition-all duration-200"
+          className="btn-red flex items-center gap-2 px-6 py-2.5"
         >
           <X size={14} />
           <span>Exit Focus Chamber</span>

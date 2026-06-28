@@ -55,7 +55,7 @@ const History = () => {
       setError('');
     } catch (err) {
       console.error(err);
-      setError('Could not retrieve historical scroll for this date.');
+      setError('Could not retrieve historical logs.');
     } finally {
       setLoading(false);
     }
@@ -76,13 +76,13 @@ const History = () => {
     setDate(next);
   };
 
-  const statusIcons = {
-    Completed: 'text-vagabond-green',
-    Missed: 'text-vagabond-red',
-    Unavoidable: 'text-gray-500',
-    Upcoming: 'text-gray-600',
-    'In Progress': 'text-vagabond-gold',
-    'Ready To Complete': 'text-vagabond-gold animate-pulse',
+  const statusIconsColors = {
+    Completed: 'bg-[#008000] text-white border-2 border-white shadow-[1px_1px_0px_0px_rgba(255,255,255,1)]',
+    Missed: 'bg-[#ff0000] text-white border-2 border-white shadow-[1px_1px_0px_0px_rgba(255,255,255,1)]',
+    Unavoidable: 'bg-[#0000ff] text-white border-2 border-white shadow-[1px_1px_0px_0px_rgba(255,255,255,1)]',
+    Upcoming: 'bg-neutral-800 text-white border-2 border-white shadow-[1px_1px_0px_0px_rgba(255,255,255,1)]',
+    'In Progress': 'bg-[#ffff00] text-black border-2 border-white shadow-[1px_1px_0px_0px_rgba(255,255,255,1)]',
+    'Ready To Complete': 'bg-[#008000] text-white border-2 border-white animate-pulse shadow-[1px_1px_0px_0px_rgba(255,255,255,1)]',
   };
 
   const getStatusIndicator = (task) => {
@@ -93,83 +93,83 @@ const History = () => {
   };
 
   return (
-    <div className="flex flex-col gap-8 max-w-4xl mx-auto">
+    <div className="flex flex-col gap-8 max-w-4xl mx-auto text-white font-mono">
       {/* View Mode Toggle */}
-      <div className="flex border-b border-vagabond-slate gap-4 justify-center">
+      <div className="flex border-b-2 border-white gap-4 justify-center font-bold">
         <button
           onClick={() => setViewMode('timeline')}
-          className={`pb-2.5 px-4 font-serif text-sm uppercase tracking-widest transition-all duration-200 border-b-2 ${
+          className={`pb-2.5 px-4 text-sm uppercase tracking-widest transition-all border-b-4 ${
             viewMode === 'timeline'
-              ? 'border-vagabond-gold text-vagabond-gold font-bold'
-              : 'border-transparent text-vagabond-parchment text-opacity-60 hover:text-opacity-100'
+              ? 'border-white text-white font-bold'
+              : 'border-transparent text-neutral-400 hover:text-white'
           }`}
         >
           Daily Timeline
         </button>
         <button
           onClick={() => setViewMode('blueprint')}
-          className={`pb-2.5 px-4 font-serif text-sm uppercase tracking-widest transition-all duration-200 border-b-2 ${
+          className={`pb-2.5 px-4 text-sm uppercase tracking-widest transition-all border-b-4 ${
             viewMode === 'blueprint'
-              ? 'border-vagabond-gold text-vagabond-gold font-bold'
-              : 'border-transparent text-vagabond-parchment text-opacity-60 hover:text-opacity-100'
+              ? 'border-white text-white font-bold'
+              : 'border-transparent text-neutral-400 hover:text-white'
           }`}
         >
-          Timetable Blueprints
+          Blueprints
         </button>
       </div>
 
       {viewMode === 'timeline' ? (
         <>
           {/* 1. Date Navigation Header */}
-          <section className="flex items-center justify-between border-b border-vagabond-slate pb-4 gap-4">
+          <section className="flex items-center justify-between border-b-2 border-white pb-4 gap-4">
             <button
               onClick={handlePrevDay}
-              className="p-2 border border-vagabond-slate rounded bg-vagabond-charcoal hover:text-vagabond-gold transition-colors"
+              className="p-2 border-2 border-white hover:bg-neutral-900 text-white font-bold transition-all bg-[#0e1017] shadow-[2px_2px_0px_0px_rgba(255,255,255,1)]"
             >
               <ChevronLeft size={18} />
             </button>
 
             <div className="flex items-center gap-3">
-              <Calendar size={18} className="text-vagabond-gold" />
+              <Calendar size={18} className="text-white" />
               <input
                 type="date"
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
-                className="px-3 py-1.5 border border-vagabond-slate rounded bg-vagabond-dark font-mono text-sm text-vagabond-parchment focus:outline-none focus:border-vagabond-gold w-40 text-center"
+                className="text-center font-bold bg-[#0e1017] text-white border-2 border-white px-3 py-1.5"
               />
             </div>
 
             <button
               onClick={handleNextDay}
-              className="p-2 border border-vagabond-slate rounded bg-vagabond-charcoal hover:text-vagabond-gold transition-colors"
+              className="p-2 border-2 border-white hover:bg-neutral-900 text-white font-bold transition-all bg-[#0e1017] shadow-[2px_2px_0px_0px_rgba(255,255,255,1)]"
             >
               <ChevronRight size={18} />
             </button>
           </section>
 
           {loading ? (
-            <div className="text-center py-12 text-sm italic text-vagabond-brown font-serif">
-              Unrolling the parchment for {date}...
+            <div className="text-center py-12 text-sm italic text-neutral-400 font-mono">
+              Syncing logs for {date}...
             </div>
           ) : error ? (
-            <div className="text-center py-12 text-vagabond-red font-serif">
+            <div className="text-center py-12 text-red-500 font-mono font-bold">
               <p>{error}</p>
             </div>
           ) : timeline ? (
             <div className="flex flex-col gap-6 animate-fade-in">
-              {/* Formatted Date Title */}
+              {/* Date Title */}
               <div className="text-center">
-                <h2 className="text-3xl font-serif font-bold text-transparent bg-clip-text bg-gradient-to-r from-vagabond-parchment to-white uppercase tracking-widest">
+                <h2 className="text-3xl font-bold uppercase tracking-widest text-white">
                   {timeline.formattedDateLabel}
                 </h2>
-                <div className="w-16 h-0.5 bg-vagabond-gold mx-auto mt-2"></div>
+                <div className="w-16 h-1 bg-white mx-auto mt-2"></div>
               </div>
 
-              {/* Stable Quote of the Day */}
+              {/* Quote of the Day */}
               {timeline.dailyQuote && (
-                <div className="p-5 border border-vagabond-brown border-opacity-10 rounded bg-vagabond-charcoal text-center shadow-zen italic font-serif text-sm">
+                <div className="p-5 border-2 border-white bg-[#0e1017] brutalist-card text-center italic text-sm">
                   <p>"{timeline.dailyQuote.quote}"</p>
-                  <p className="text-right text-[10px] text-vagabond-gold font-serif not-italic mt-2 uppercase tracking-widest">— {timeline.dailyQuote.author}</p>
+                  <p className="text-right text-[10px] text-white font-bold not-italic mt-2 font-mono uppercase tracking-widest">— {timeline.dailyQuote.author}</p>
                 </div>
               )}
 
@@ -178,44 +178,44 @@ const History = () => {
                 
                 {/* Timeline Task Log */}
                 <div className="md:col-span-2 flex flex-col gap-4">
-                  <h3 className="font-serif text-sm uppercase tracking-wider text-vagabond-gold border-b border-vagabond-slate pb-2">Chronological Tasks</h3>
+                  <h3 className="text-sm uppercase tracking-wider text-white font-bold border-b-2 border-white pb-2">Active Task List</h3>
                   
-                  <div className="flex flex-col gap-4 border-l border-vagabond-slate pl-4 ml-2">
+                  <div className="flex flex-col gap-4 border-l-2 border-white pl-6 ml-4">
                     {timeline.tasks.length > 0 ? (
                       timeline.tasks.map((task) => (
-                        <div key={task._id} className="relative group">
+                        <div key={task._id} className="relative">
                           {/* Timeline Dot Indicator */}
-                          <span className={`absolute -left-[23px] top-1 bg-vagabond-dark w-4.5 h-4.5 rounded-full border-2 border-vagabond-slate flex items-center justify-center text-[9px] font-bold ${statusIcons[task.status]}`}>
+                          <span className={`absolute -left-[35px] top-1.5 w-6 h-6 rounded-none flex items-center justify-center text-[10px] font-bold ${statusIconsColors[task.status]}`}>
                             {getStatusIndicator(task)}
                           </span>
 
-                          <div className="p-4 border border-vagabond-slate rounded bg-vagabond-charcoal bg-opacity-40">
-                            <div className="flex items-center justify-between text-[10px] font-mono text-vagabond-brown mb-1">
+                          <div className="p-4 border-2 border-white bg-[#0e1017] brutalist-card">
+                            <div className="flex items-center justify-between text-[10px] font-mono text-neutral-400 font-bold mb-1">
                               <span>{task.startTime} - {task.endTime} ({task.reducedDuration}m)</span>
-                              <span className="uppercase tracking-widest font-serif font-bold text-vagabond-gold">{task.category}</span>
+                              <span className="uppercase tracking-widest text-white font-bold border border-white px-1.5 py-0.5 bg-[#0e1017] font-mono shadow-[1px_1px_0px_0px_rgba(255,255,255,1)]">{task.category}</span>
                             </div>
-                            <h4 className="font-serif text-sm font-semibold">{task.name}</h4>
+                            <h4 className="text-sm font-bold text-white font-mono">{task.name}</h4>
                             
-                            <div className="mt-2 flex flex-wrap items-center justify-between text-[11px] font-serif border-t border-vagabond-slate border-opacity-30 pt-2">
-                              <span className={`${statusIcons[task.status]} font-medium`}>
+                            <div className="mt-2 flex flex-wrap items-center justify-between text-[11px] border-t border-neutral-700 pt-2 font-mono font-bold text-white">
+                              <span className="uppercase tracking-wider">
                                 {task.status}
                               </span>
                               
                               {task.status === 'Completed' && (
-                                <span className="text-vagabond-green font-mono">
-                                  Completed at {moment(task.completionTime).format('HH:mm')} | +{task.xpEarned} XP
+                                <span className="text-green-400">
+                                  Done at {moment(task.completionTime).format('HH:mm')} | +{task.xpEarned} XP
                                 </span>
                               )}
 
                               {task.status === 'Missed' && (
-                                <span className="text-vagabond-red">
-                                  Punishment: {task.punishment} ({task.punishmentStatus})
+                                <span className="text-red-500">
+                                  Sabotage: {task.punishment} ({task.punishmentStatus})
                                 </span>
                               )}
 
                               {task.status === 'Unavoidable' && (
-                                <span className="text-gray-400 italic">
-                                  Unavoidable: {task.unavoidableReason}
+                                <span className="text-neutral-400 italic">
+                                  Reason: {task.unavoidableReason}
                                 </span>
                               )}
                             </div>
@@ -223,7 +223,7 @@ const History = () => {
                         </div>
                       ))
                     ) : (
-                      <p className="text-xs text-vagabond-brown italic font-serif pl-2 py-4">No tasks were active on this date.</p>
+                      <p className="text-xs text-neutral-500 italic font-mono pl-2 py-4">No tasks were active on this date.</p>
                     )}
                   </div>
                 </div>
@@ -232,70 +232,70 @@ const History = () => {
                 <div className="flex flex-col gap-6">
                   
                   {/* Daily Diary segment */}
-                  <div className="p-5 border border-vagabond-slate rounded-lg bg-vagabond-charcoal">
-                    <h3 className="font-serif text-sm uppercase tracking-wider text-vagabond-gold border-b border-vagabond-slate pb-2 mb-3 flex items-center gap-1.5">
+                  <div className="p-5 border-2 border-white bg-[#0e1017] brutalist-card">
+                    <h3 className="text-sm uppercase tracking-wider text-white font-bold border-b-2 border-white pb-2 mb-3 flex items-center gap-1.5 font-mono">
                       <BookOpen size={14} />
                       Journal Entry
                     </h3>
                     {timeline.diary ? (
-                      <div className="font-serif">
-                        <h4 className="text-sm font-bold text-vagabond-parchment">{timeline.diary.title || 'Untitled Journal'}</h4>
+                      <div>
+                        <h4 className="text-sm font-bold text-white font-mono">{timeline.diary.title || 'Untitled Journal'}</h4>
                         {timeline.diary.mood && (
-                          <span className="text-[10px] uppercase font-mono text-vagabond-gold mt-1 block">Mood: {timeline.diary.mood}</span>
+                          <span className="text-[10px] uppercase font-mono text-white font-bold mt-1 block">Mood: {timeline.diary.mood}</span>
                         )}
-                        <p className="text-xs text-vagabond-parchment text-opacity-80 leading-relaxed mt-2 italic">
+                        <p className="text-xs text-neutral-300 leading-relaxed mt-2 italic font-mono">
                           "{timeline.diary.content}"
                         </p>
                         {timeline.diary.tags?.length > 0 && (
                           <div className="flex flex-wrap gap-1 mt-3">
                             {timeline.diary.tags.map((tg) => (
-                              <span key={tg} className="text-[9px] font-mono px-1.5 py-0.5 bg-vagabond-slate rounded text-vagabond-brown">#{tg}</span>
+                              <span key={tg} className="text-[9px] font-mono px-1.5 py-0.5 bg-[#ffff00] text-black border border-white font-bold shadow-[1px_1px_0px_0px_rgba(255,255,255,1)]">#{tg}</span>
                             ))}
                           </div>
                         )}
                       </div>
                     ) : (
-                      <p className="text-xs text-vagabond-brown italic font-serif">No journal entry recorded.</p>
+                      <p className="text-xs text-neutral-500 italic">No journal entry recorded.</p>
                     )}
                   </div>
 
                   {/* Reflection Card */}
-                  <div className="p-5 border border-vagabond-slate rounded-lg bg-vagabond-charcoal">
-                    <h3 className="font-serif text-sm uppercase tracking-wider text-vagabond-gold border-b border-vagabond-slate pb-2 mb-3 flex items-center gap-1.5">
+                  <div className="p-5 border-2 border-white bg-[#0e1017] brutalist-card">
+                    <h3 className="text-sm uppercase tracking-wider text-white font-bold border-b-2 border-white pb-2 mb-3 flex items-center gap-1.5 font-mono">
                       <MessageSquare size={14} />
                       Reflections
                     </h3>
                     {timeline.reflection ? (
-                      <div className="font-serif">
-                        <span className="text-[10px] uppercase font-mono text-vagabond-gold block mb-1">
-                          Day Assessment: <strong>{timeline.reflection.mood}</strong>
+                      <div>
+                        <span className="text-[10px] uppercase font-mono text-white font-bold block mb-1">
+                          Assessment: <strong>{timeline.reflection.mood}</strong>
                         </span>
-                        <p className="text-xs text-vagabond-parchment text-opacity-80 leading-relaxed italic">
+                        <p className="text-xs text-neutral-300 leading-relaxed italic font-mono">
                           "{timeline.reflection.reflectionNotes}"
                         </p>
                       </div>
                     ) : (
-                      <p className="text-xs text-vagabond-brown italic font-serif">No reflection recorded for the day.</p>
+                      <p className="text-xs text-neutral-500 italic">No reflection recorded.</p>
                     )}
                   </div>
 
                   {/* Achievements Unlocked */}
-                  <div className="p-5 border border-vagabond-slate rounded-lg bg-vagabond-charcoal">
-                    <h3 className="font-serif text-sm uppercase tracking-wider text-vagabond-gold border-b border-vagabond-slate pb-2 mb-3 flex items-center gap-1.5">
+                  <div className="p-5 border-2 border-white bg-[#0e1017] brutalist-card">
+                    <h3 className="text-sm uppercase tracking-wider text-white font-bold border-b-2 border-white pb-2 mb-3 flex items-center gap-1.5 font-mono">
                       <Award size={14} />
-                      Achievements Unlocked
+                      Unlocked achievements
                     </h3>
                     {timeline.achievementsUnlocked?.length > 0 ? (
                       <div className="flex flex-col gap-2">
                         {timeline.achievementsUnlocked.map((ach) => (
-                          <div key={ach._id} className="p-2 border border-vagabond-gold border-opacity-20 rounded bg-vagabond-dark text-xs flex flex-col">
-                            <span className="font-serif text-vagabond-gold font-bold">{ach.name}</span>
-                            <span className="text-[10px] text-vagabond-brown">{ach.description}</span>
+                          <div key={ach._id} className="p-2 border-2 border-white bg-[#ffff00] bg-opacity-10 text-xs flex flex-col font-bold font-mono">
+                            <span className="text-white">{ach.name}</span>
+                            <span className="text-[10px] text-neutral-400 mt-0.5">{ach.description}</span>
                           </div>
                         ))}
                       </div>
                     ) : (
-                      <p className="text-xs text-vagabond-brown italic font-serif">No achievements unlocked today.</p>
+                      <p className="text-xs text-neutral-500 italic">No achievements unlocked today.</p>
                     )}
                   </div>
 
@@ -303,24 +303,24 @@ const History = () => {
               </div>
 
               {/* Stats summary footer block */}
-              <section className="mt-8 p-6 border border-vagabond-slate rounded-lg bg-vagabond-charcoal bg-opacity-70 shadow-zen grid grid-cols-2 sm:grid-cols-4 gap-6">
+              <section className="mt-8 p-6 border-2 border-white bg-[#0e1017] brutalist-card grid grid-cols-2 sm:grid-cols-4 gap-6 font-bold">
                 <div className="flex flex-col gap-0.5 text-center sm:text-left">
-                  <span className="text-[10px] uppercase font-mono text-vagabond-brown">Success / Missed</span>
-                  <span className="text-lg font-serif font-bold text-vagabond-parchment">
+                  <span className="text-[10px] uppercase font-mono text-neutral-400 font-bold">Success / Sabotage</span>
+                  <span className="text-lg text-white font-mono">
                     {timeline.summary.completedTasksCount} / {timeline.summary.missedTasksCount}
                   </span>
                 </div>
                 <div className="flex flex-col gap-0.5 text-center sm:text-left">
-                  <span className="text-[10px] uppercase font-mono text-vagabond-brown">XP Earned</span>
-                  <span className="text-lg font-mono font-bold text-vagabond-gold">+{timeline.summary.xpEarned} XP</span>
+                  <span className="text-[10px] uppercase font-mono text-neutral-400 font-bold">XP Earned</span>
+                  <span className="text-lg font-mono text-white">+{timeline.summary.xpEarned} XP</span>
                 </div>
                 <div className="flex flex-col gap-0.5 text-center sm:text-left">
-                  <span className="text-[10px] uppercase font-mono text-vagabond-brown">Focus Hours</span>
-                  <span className="text-lg font-serif font-bold text-vagabond-parchment">{timeline.summary.focusHoursStr}</span>
+                  <span className="text-[10px] uppercase font-mono text-neutral-400 font-bold">Focus Hours</span>
+                  <span className="text-lg text-white font-mono">{timeline.summary.focusHoursStr}</span>
                 </div>
                 <div className="flex flex-col gap-0.5 text-center sm:text-left">
-                  <span className="text-[10px] uppercase font-mono text-vagabond-brown">Productivity Score</span>
-                  <span className="text-lg font-serif font-bold text-vagabond-green">{timeline.summary.productivityScore}%</span>
+                  <span className="text-[10px] uppercase font-mono text-neutral-400 font-bold">Task Efficiency</span>
+                  <span className="text-lg text-green-400 font-mono">{timeline.summary.productivityScore}%</span>
                 </div>
               </section>
             </div>
@@ -328,14 +328,14 @@ const History = () => {
         </>
       ) : (
         /* Blueprint View Mode */
-        <div className="flex flex-col gap-6 animate-fade-in">
-          <section className="flex flex-col gap-4 border border-vagabond-slate p-6 rounded-lg bg-vagabond-charcoal">
+        <div className="flex flex-col gap-6 animate-fade-in font-mono">
+          <section className="flex flex-col gap-4 border-2 border-white p-6 bg-[#0e1017] brutalist-card">
             <div className="flex flex-col gap-1.5 max-w-md">
-              <label className="text-xs font-serif uppercase tracking-widest text-vagabond-brown">Select Timetable</label>
+              <label className="text-xs uppercase tracking-widest text-white font-bold font-mono">Select Timetable blueprint</label>
               <select
                 value={selectedTimetableId}
                 onChange={(e) => setSelectedTimetableId(e.target.value)}
-                className="px-3 py-2 rounded border border-vagabond-slate bg-vagabond-dark text-sm text-vagabond-parchment focus:outline-none focus:border-vagabond-gold"
+                className="w-full text-sm font-bold bg-[#0e1017] text-white border-2 border-white py-1.5"
               >
                 <option value="">-- Choose Timetable --</option>
                 {timetables.map(t => (
@@ -346,54 +346,54 @@ const History = () => {
           </section>
 
           {selectedTimetable ? (
-            <div className="flex flex-col gap-6 border border-vagabond-slate rounded-lg p-6 bg-vagabond-charcoal bg-opacity-40">
-              <div className="border-b border-vagabond-slate pb-4">
-                <h3 className="text-2xl font-serif text-vagabond-gold font-bold uppercase tracking-wider">
+            <div className="flex flex-col gap-6 border-2 border-white p-6 bg-[#0e1017] brutalist-card">
+              <div className="border-b-2 border-white pb-4">
+                <h3 className="text-2xl font-bold uppercase tracking-wider font-mono">
                   {selectedTimetable.name}
                 </h3>
-                <p className="text-xs text-vagabond-brown font-mono mt-1">
-                  Active Timeline: {moment(selectedTimetable.startDate).format('DD MMM YYYY')} &mdash; {moment(selectedTimetable.endDate).format('DD MMM YYYY')}
+                <p className="text-xs text-neutral-400 font-mono mt-1 font-bold">
+                  Active timeline: {moment(selectedTimetable.startDate).format('DD MMM YYYY')} &mdash; {moment(selectedTimetable.endDate).format('DD MMM YYYY')}
                 </p>
               </div>
 
               <div>
-                <h4 className="font-serif text-sm text-vagabond-parchment uppercase tracking-wider mb-4 border-b border-vagabond-slate border-opacity-35 pb-1">
-                  Default Daily Tasks blueprint ({selectedTimetable.defaultSchedule.length} tasks)
+                <h4 className="text-sm font-bold uppercase tracking-wider mb-4 border-b border-neutral-700 pb-1 font-mono text-neutral-300">
+                  Default Tasks Blueprint ({selectedTimetable.defaultSchedule.length} tasks)
                 </h4>
                 <div className="flex flex-col gap-4">
                   {selectedTimetable.defaultSchedule.length > 0 ? (
                     selectedTimetable.defaultSchedule.map((task, idx) => (
-                      <div key={idx} className="p-4 border border-vagabond-slate rounded bg-vagabond-dark bg-opacity-30 flex items-center justify-between gap-4">
+                      <div key={idx} className="p-4 border-2 border-white bg-[#0e1017] flex items-center justify-between gap-4 brutalist-card">
                         <div>
                           <div className="flex items-center gap-2 mb-1">
-                            <span className="text-[9px] font-serif uppercase tracking-widest text-vagabond-gold font-bold">
+                            <span className="text-[9px] uppercase tracking-widest text-white font-bold border border-white px-1.5 py-0.5 bg-[#0e1017] font-mono shadow-[1px_1px_0px_0px_rgba(255,255,255,1)]">
                               {task.category}
                             </span>
-                            <span className="text-[10px] font-mono text-vagabond-brown">
+                            <span className="text-[10px] font-mono text-neutral-400 font-bold">
                               {task.startTime} - {task.endTime}
                             </span>
                           </div>
-                          <h5 className="font-serif text-sm font-semibold text-vagabond-parchment">{task.name}</h5>
+                          <h5 className="text-sm font-bold text-white font-mono">{task.name}</h5>
                           {task.notes && (
-                            <p className="text-[11px] text-vagabond-brown italic font-serif mt-1">
+                            <p className="text-[11px] text-neutral-400 italic mt-1 font-mono">
                               "{task.notes}"
                             </p>
                           )}
                         </div>
                         <div className="text-right">
-                          <span className="text-[10px] uppercase font-mono text-vagabond-red block">Failure Penalty</span>
-                          <span className="text-xs text-vagabond-parchment font-serif">{task.punishment}</span>
+                          <span className="text-[10px] uppercase font-mono text-red-500 font-bold block">Sabotage Penalty</span>
+                          <span className="text-xs text-white font-bold">{task.punishment}</span>
                         </div>
                       </div>
                     ))
                   ) : (
-                    <p className="text-xs text-vagabond-brown italic font-serif">No task templates defined in this timetable.</p>
+                    <p className="text-xs text-neutral-500 italic font-mono">No tasks blueprint defined.</p>
                   )}
                 </div>
               </div>
             </div>
           ) : (
-            <div className="text-center py-12 text-sm italic text-vagabond-brown font-serif">
+            <div className="text-center py-12 text-sm italic text-neutral-500 font-mono">
               Select a timetable blueprint to inspect task templates.
             </div>
           )}

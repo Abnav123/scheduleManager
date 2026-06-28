@@ -15,6 +15,12 @@ export const saveDiaryEntry = async (req, res, next) => {
       throw new Error('Date is required');
     }
 
+    const today = getTodayIST();
+    if (date !== today) {
+      res.status(400);
+      throw new Error('Diary entries can only be written or modified on the active day');
+    }
+
     // If content is empty or blank, delete the diary entry for this date
     if (!content || content.trim() === '') {
       await DailyDiary.findOneAndDelete({ date });
@@ -70,6 +76,11 @@ export const deleteDiaryEntry = async (req, res, next) => {
     if (!diary) {
       res.status(404);
       throw new Error('Diary entry not found');
+    }
+    const today = getTodayIST();
+    if (diary.date !== today) {
+      res.status(400);
+      throw new Error('Diary entries from past days cannot be deleted');
     }
     await diary.deleteOne();
     res.json({ message: 'Diary entry removed' });

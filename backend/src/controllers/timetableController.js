@@ -2,6 +2,8 @@ import Timetable from '../models/Timetable.js';
 import TaskInstance from '../models/TaskInstance.js';
 import { toISTDateString } from '../utils/dateHelper.js';
 import moment from 'moment-timezone';
+import { updateStreak } from '../services/taskService.js';
+
 
 /**
  * @desc    Create a new timetable
@@ -157,15 +159,29 @@ export const deleteTimetable = async (req, res, next) => {
       throw new Error('Timetable not found');
     }
 
-    // Delete all future task instances generated from this timetable (not started yet)
-    const now = moment().tz('Asia/Kolkata').toDate();
-    await TaskInstance.deleteMany({
+    const now = moment.tz('Asia/Kolkata').toDate();
+    // Check if there are any generated task instances for this timetable that have already ended
+    const pastTasksCount = await TaskInstance.countDocuments({
       timetableId: timetable._id,
-      scheduledStart: { $gt: now }
+      scheduledEnd: { $lt: now }
+    });
+
+    if (pastTasksCount > 0) {
+      res.status(400);
+      throw new Error('Timetable cannot be deleted because it has task instances in the past');
+    }
+
+    // Delete all task instances generated from this timetable
+    await TaskInstance.deleteMany({
+      timetableId: timetable._id
     });
 
     await timetable.deleteOne();
-    res.json({ message: 'Timetable removed and active task instances cleared' });
+
+    // Recalculate streak
+    await updateStreak();
+
+    res.json({ message: 'Timetable removed and all task instances cleared' });
   } catch (error) {
     next(error);
   }
