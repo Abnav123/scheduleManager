@@ -934,12 +934,18 @@ const TimetableManager = () => {
                   </div>
 
                   <div className="flex items-center justify-between border-t-2 border-white pt-4">
-                    <button
-                      onClick={() => handleSelectOverrideTimetable(t)}
-                      className="btn-blue"
-                    >
-                      Configure Overrides
-                    </button>
+                    {moment(t.endDate).isBefore(moment(), 'day') ? (
+                      <span className="text-xs uppercase font-bold text-neutral-400 font-mono">
+                        Blueprint Completed
+                      </span>
+                    ) : (
+                      <button
+                        onClick={() => handleSelectOverrideTimetable(t)}
+                        className="btn-blue"
+                      >
+                        Configure Overrides
+                      </button>
+                    )}
                     <button
                       onClick={() => handleDeleteTimetable(t._id)}
                       className="text-red-500 hover:bg-neutral-900 p-1.5 border-2 border-transparent hover:border-white"

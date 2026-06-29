@@ -8,6 +8,7 @@ import {
   spendXpForDuration,
   markTaskUnavoidable,
   updatePunishment,
+  getPendingPunishments,
 } from '../controllers/taskController.js';
 import { protect } from '../middleware/auth.js';
 
@@ -19,6 +20,8 @@ router.route('/')
   .get(getTasksForDate)
   .post(createCustomTask);
 
+router.get('/punishments/pending', getPendingPunishments);
+
 router.route('/:id')
   .put(editTaskInstance)
   .delete(deleteTaskInstance);
@@ -29,3 +32,4 @@ router.post('/:id/unavoidable', markTaskUnavoidable);
 router.post('/:id/punishment', updatePunishment);
 
 export default router;
+

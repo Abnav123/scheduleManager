@@ -3,7 +3,7 @@ import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContextValue.jsx';
 import { 
   Flame, BookOpen, BarChart2, Trophy, 
-  FileText, Clock, LogOut, LayoutDashboard, Compass, EyeOff, Menu, X 
+  FileText, Clock, LogOut, LayoutDashboard, Compass, EyeOff, Menu, X, ShieldAlert
 } from 'lucide-react';
 
 const DigitalClock = () => {
@@ -51,11 +51,13 @@ const Layout = ({ children, onEnterFocusMode }) => {
     { path: '/', label: 'Dashboard', icon: LayoutDashboard },
     { path: '/timetables', label: 'Timetables', icon: Compass },
     { path: '/history', label: 'Timeline', icon: Clock },
+    { path: '/punishments', label: 'Punishments', icon: ShieldAlert },
     { path: '/diary', label: 'Daily Diary', icon: BookOpen },
     { path: '/stats', label: 'Calendar & Stats', icon: BarChart2 },
     { path: '/goals', label: 'Goals & Medals', icon: Trophy },
     { path: '/notes', label: 'Notes', icon: FileText },
   ];
+
 
   const handleLogout = async () => {
     setSidebarOpen(false);

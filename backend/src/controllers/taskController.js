@@ -271,3 +271,21 @@ export const updatePunishment = async (req, res, next) => {
     next(error);
   }
 };
+
+/**
+ * @desc    Get all pending punishments
+ * @route   GET /api/tasks/punishments/pending
+ * @access  Private (Admin)
+ */
+export const getPendingPunishments = async (req, res, next) => {
+  try {
+    const punishments = await TaskInstance.find({
+      status: 'Missed',
+      punishmentStatus: 'Pending',
+    }).sort({ date: -1, startTime: -1 });
+    res.json(punishments);
+  } catch (error) {
+    next(error);
+  }
+};
+

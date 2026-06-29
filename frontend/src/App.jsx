@@ -12,6 +12,8 @@ import Diary from './pages/Diary.jsx';
 import Stats from './pages/Stats.jsx';
 import Goals from './pages/Goals.jsx';
 import NotesPlaceholder from './pages/NotesPlaceholder.jsx';
+import Punishments from './pages/Punishments.jsx';
+
 import api from './utils/api.js';
 import { RefreshCw } from 'lucide-react';
 
@@ -125,6 +127,15 @@ const AppContent = () => {
           element={
             <ProtectedRoute onEnterFocusMode={handleEnterFocusMode}>
               <History />
+            </ProtectedRoute>
+          } 
+        />
+        
+        <Route 
+          path="/punishments" 
+          element={
+            <ProtectedRoute onEnterFocusMode={handleEnterFocusMode}>
+              <Punishments />
             </ProtectedRoute>
           } 
         />
