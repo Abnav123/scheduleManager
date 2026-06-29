@@ -5,6 +5,7 @@ import {
   X, AlertCircle 
 } from 'lucide-react';
 import moment from 'moment';
+import { useToast } from '../context/ToastContext.jsx';
 
 const TimetableCalendar = ({ timetable, selectedDate, onSelectDate }) => {
   const [currentMonth, setCurrentMonth] = useState(() => {
@@ -119,6 +120,7 @@ const TimetableCalendar = ({ timetable, selectedDate, onSelectDate }) => {
 };
 
 const TimetableManager = () => {
+  const { showToast } = useToast();
   const [timetables, setTimetables] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -321,8 +323,8 @@ const TimetableManager = () => {
         setShowOverrideForm(false);
         setEditingOverrideIndex(null);
       }
-    } catch {
-      alert('Delete failed');
+    } catch (err) {
+      showToast(err.response?.data?.message || 'Delete failed', 'error');
     }
   };
 
@@ -464,14 +466,14 @@ const TimetableManager = () => {
         await api.put(`/timetables/${selectedTimetable._id}`, {
           defaultSchedule: overrideTasks,
         });
-        alert('Schedule blueprint updated for all days successfully.');
+        showToast('Schedule blueprint updated for all days successfully.');
       } else {
         // Date-specific override
         await api.post(`/timetables/${selectedTimetable._id}/overrides`, {
           date: overrideDate,
           tasks: overrideTasks,
         });
-        alert('Override saved successfully for ' + overrideDate);
+        showToast('Override saved successfully for ' + overrideDate);
       }
       setShowOverrideForm(false);
       setSelectedTimetable(null);

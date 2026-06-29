@@ -5,6 +5,7 @@ import {
   Flame, Award, ShieldAlert, Sparkles, ChevronRight, Eye, RefreshCw, X 
 } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
+import { useToast } from '../context/ToastContext.jsx';
 
 // Memoized Task Card to optimize rendering
 const TaskCard = React.memo(({ task, onComplete, onReduce, onUnavoidable, onPunishmentComplete }) => {
@@ -225,6 +226,7 @@ const TaskCard = React.memo(({ task, onComplete, onReduce, onUnavoidable, onPuni
 });
 
 const Dashboard = ({ onEnterFocusMode }) => {
+  const { showToast } = useToast();
   const { refreshUser } = useContext(AuthContext);
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -283,41 +285,45 @@ const Dashboard = ({ onEnterFocusMode }) => {
   const handleCompleteTask = useCallback(async (taskId) => {
     try {
       await api.post(`/tasks/${taskId}/complete`);
+      showToast('Task completed successfully! You earned XP.');
       await fetchDashboard();
       await refreshUser();
     } catch (err) {
-      alert(err.response?.data?.message || 'Completion failed.');
+      showToast(err.response?.data?.message || 'Completion failed.', 'error');
     }
-  }, [fetchDashboard, refreshUser]);
+  }, [fetchDashboard, refreshUser, showToast]);
 
   const handleReduceDuration = useCallback(async (taskId, minutes) => {
     try {
       await api.post(`/tasks/${taskId}/reduce-duration`, { minutes });
+      showToast('Task duration reduced successfully.');
       await fetchDashboard();
       await refreshUser();
     } catch (err) {
-      alert(err.response?.data?.message || 'XP reduction failed.');
+      showToast(err.response?.data?.message || 'XP reduction failed.', 'error');
     }
-  }, [fetchDashboard, refreshUser]);
+  }, [fetchDashboard, refreshUser, showToast]);
 
   const handleMarkUnavoidable = useCallback(async (taskId, reason) => {
     try {
       await api.post(`/tasks/${taskId}/unavoidable`, { reason });
+      showToast('Task marked as Unavoidable.');
       await fetchDashboard();
       await refreshUser();
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to mark unavoidable.');
+      showToast(err.response?.data?.message || 'Failed to mark unavoidable.', 'error');
     }
-  }, [fetchDashboard, refreshUser]);
+  }, [fetchDashboard, refreshUser, showToast]);
 
   const handlePunishmentComplete = useCallback(async (taskId) => {
     try {
       await api.post(`/tasks/${taskId}/punishment`, { status: 'Completed' });
+      showToast('Punishment resolved successfully.');
       await fetchDashboard();
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to update punishment.');
+      showToast(err.response?.data?.message || 'Failed to update punishment.', 'error');
     }
-  }, [fetchDashboard]);
+  }, [fetchDashboard, showToast]);
 
   // Sort daily tasks chronologically
   const sortedTasks = useMemo(() => {

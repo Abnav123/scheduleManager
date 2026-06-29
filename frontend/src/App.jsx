@@ -14,6 +14,7 @@ const Goals = React.lazy(() => import('./pages/Goals.jsx'));
 const NotesPlaceholder = React.lazy(() => import('./pages/NotesPlaceholder.jsx'));
 const Punishments = React.lazy(() => import('./pages/Punishments.jsx'));
 
+import { ToastProvider } from './context/ToastContext.jsx';
 import api from './utils/api.js';
 import { RefreshCw } from 'lucide-react';
 
@@ -42,6 +43,7 @@ const ProtectedRoute = ({ children, onEnterFocusMode }) => {
 };
 
 const AppContent = () => {
+  const { showToast } = useToast();
   const { isAuthenticated } = useContext(AuthContext);
   const [isFocusMode, setIsFocusMode] = useState(false);
   const [activeFocusTask, setActiveFocusTask] = useState(null);
@@ -80,12 +82,12 @@ const AppContent = () => {
   const handleCompleteTaskInFocus = async (taskId) => {
     try {
       await api.post(`/tasks/${taskId}/complete`);
-      alert('Task completed successfully! You earned XP.');
+      showToast('Task completed successfully! You earned XP.');
       setIsFocusMode(false);
       // Reload page content by triggers
       window.location.reload();
     } catch (err) {
-      alert(err.response?.data?.message || 'Completion failed.');
+      showToast(err.response?.data?.message || 'Completion failed.', 'error');
     }
   };
 
@@ -195,9 +197,11 @@ const AppContent = () => {
 const App = () => {
   return (
     <Router>
-      <AuthProvider>
-        <AppContent />
-      </AuthProvider>
+      <ToastProvider>
+        <AuthProvider>
+          <AppContent />
+        </AuthProvider>
+      </ToastProvider>
     </Router>
   );
 };

@@ -2,8 +2,10 @@ import React, { useState, useEffect, useCallback } from 'react';
 import api from '../utils/api.js';
 import { ShieldAlert, RefreshCw, CheckCircle, Calendar, Clock } from 'lucide-react';
 import moment from 'moment';
+import { useToast } from '../context/ToastContext.jsx';
 
 const Punishments = () => {
+  const { showToast } = useToast();
   const [punishments, setPunishments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -39,10 +41,11 @@ const Punishments = () => {
   const handleResolvePunishment = async (taskId) => {
     try {
       await api.post(`/tasks/${taskId}/punishment`, { status: 'Completed' });
+      showToast('Punishment resolved successfully');
       // Remove or update the resolved task in list
       setPunishments((prev) => prev.filter((p) => p._id !== taskId));
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to update punishment.');
+      showToast(err.response?.data?.message || 'Failed to update punishment.', 'error');
     }
   };
 

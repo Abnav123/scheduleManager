@@ -5,8 +5,10 @@ import {
   Lock, CheckCircle2, AlertTriangle 
 } from 'lucide-react';
 import moment from 'moment';
+import { useToast } from '../context/ToastContext.jsx';
 
 const Goals = () => {
+  const { showToast } = useToast();
   const [goals, setGoals] = useState([]);
   const [achievements, setAchievements] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -71,6 +73,7 @@ const Goals = () => {
       setStartDate('');
       setEndDate('');
       setShowAddForm(false);
+      showToast('Goal formulated successfully');
       fetchData();
     } catch (err) {
       setFormError(err.response?.data?.message || 'Failed to create goal.');
@@ -84,9 +87,10 @@ const Goals = () => {
     }
     try {
       await api.delete(`/goals/${id}`);
+      showToast('Goal removed successfully');
       fetchData();
     } catch {
-      alert('Delete failed');
+      showToast('Delete failed', 'error');
     }
   };
 
