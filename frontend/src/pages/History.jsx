@@ -106,7 +106,6 @@ const History = () => {
 
   // Blueprint states
   const [timetables, setTimetables] = useState([]);
-  const [selectedTimetableId, setSelectedTimetableId] = useState('');
   const [selectedTimetable, setSelectedTimetable] = useState(null);
   const [blueprintDate, setBlueprintDate] = useState(getTodayIST());
 
@@ -126,14 +125,7 @@ const History = () => {
             return today.isSameOrAfter(start) && today.isSameOrBefore(end);
           });
 
-          const defaultSelect = activeForToday || res.data[0] || null;
-          if (defaultSelect) {
-            setSelectedTimetableId(defaultSelect._id);
-            setSelectedTimetable(defaultSelect);
-          } else {
-            setSelectedTimetableId('');
-            setSelectedTimetable(null);
-          }
+          setSelectedTimetable(activeForToday || null);
         } catch (err) {
           console.error('Failed to fetch timetables', err);
         }
@@ -153,24 +145,8 @@ const History = () => {
       return target.isSameOrAfter(start) && target.isSameOrBefore(end);
     });
 
-    if (activeForDate) {
-      setSelectedTimetableId(activeForDate._id);
-      setSelectedTimetable(activeForDate);
-    } else {
-      setSelectedTimetableId('');
-      setSelectedTimetable(null);
-    }
+    setSelectedTimetable(activeForDate || null);
   };
-
-  // Update selected timetable object when ID changes
-  useEffect(() => {
-    if (selectedTimetableId) {
-      const found = timetables.find(t => t._id === selectedTimetableId);
-      setSelectedTimetable(found || null);
-    } else {
-      setSelectedTimetable(null);
-    }
-  }, [selectedTimetableId, timetables]);
 
   const getTasksToDisplay = () => {
     if (!selectedTimetable) return [];
@@ -435,25 +411,8 @@ const History = () => {
         /* Blueprint View Mode */
         <div className="flex flex-col gap-6 animate-fade-in font-mono">
           <div className="flex flex-col md:flex-row gap-6 items-start">
-            {/* Left Column: Dropdown and Calendar */}
+            {/* Left Column: Calendar */}
             <div className="flex flex-col gap-6 w-full md:w-auto md:min-w-[320px] shrink-0">
-              <section className="flex flex-col gap-4 border-2 border-white p-6 bg-[#0e1017] brutalist-card">
-                <div className="flex flex-col gap-1.5 w-full">
-                  <label className="text-xs uppercase tracking-widest text-white font-bold font-mono">Select Timetable blueprint</label>
-                  <select
-                    value={selectedTimetableId}
-                    onChange={(e) => setSelectedTimetableId(e.target.value)}
-                    className="w-full text-sm font-bold bg-[#0e1017] text-white border-2 border-white py-1.5"
-                  >
-                    <option value="">-- Choose Timetable --</option>
-                    {timetables.map(t => (
-                      <option key={t._id} value={t._id}>{t.name}</option>
-                    ))}
-                  </select>
-                </div>
-              </section>
-
-              {/* Blueprint Calendar Component */}
               <BlueprintCalendar 
                 selectedDate={blueprintDate}
                 onSelectDate={handleSelectBlueprintDate}
@@ -526,8 +485,8 @@ const History = () => {
                   </div>
                 </div>
               ) : (
-                <div className="text-center py-12 text-sm italic text-neutral-500 font-mono border-2 border-white bg-[#0e1017] p-6 brutalist-card animate-fade-in">
-                  Select a timetable blueprint or click a calendar date to inspect task templates.
+                <div className="text-center py-12 text-sm italic text-neutral-400 font-mono border-2 border-white bg-[#0e1017] p-6 brutalist-card animate-fade-in">
+                  No active blueprint scheduled for this date.
                 </div>
               )}
             </div>
