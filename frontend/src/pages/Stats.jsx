@@ -20,7 +20,7 @@ const Stats = () => {
       setError('');
 
       // Fetch summary stats
-      const summaryRes = await api.get('/stats/dashboard');
+      const summaryRes = await api.get('/stats/dashboard?full=true');
       setStatsSummary(summaryRes.data.stats);
 
       // Fetch calendar data for selected month/year

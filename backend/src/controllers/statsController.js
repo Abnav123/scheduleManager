@@ -51,13 +51,14 @@ export const getDashboardData = async (req, res, next) => {
   try {
     const todayStr = getTodayIST();
     const userId = req.user._id;
+    const isFull = req.query.full === 'true';
     
     // Ensure today's task instances are created and updated
     await generateDailyTasks(todayStr, userId);
 
     const now = getNowIST().toDate();
     const [stats, todayTasks, todayDiary, todayReflection, activeGoals] = await Promise.all([
-      getStatsSummary(userId),
+      getStatsSummary(userId, isFull),
       TaskInstance.find({ userId, date: todayStr }).sort({ startTime: 1 }),
       DailyDiary.findOne({ userId, date: todayStr }),
       DailyReflection.findOne({ userId, date: todayStr }),

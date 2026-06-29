@@ -6,20 +6,10 @@ import moment from 'moment-timezone';
 /**
  * Get comprehensive statistics for the admin dashboard
  */
-export const getStatsSummary = async (userId) => {
+export const getStatsSummary = async (userId, full = false) => {
   const userObjectId = new mongoose.Types.ObjectId(userId);
 
-  const [
-    user,
-    totalTasks,
-    completed,
-    missed,
-    unavoidable,
-    focusTimeAggregate,
-    categoryHoursAggregate,
-    mostCompletedAggregate,
-    mostMissedAggregate
-  ] = await Promise.all([
+  const promises = [
     User.findById(userId),
     TaskInstance.countDocuments({ userId }),
     TaskInstance.countDocuments({ userId, status: 'Completed' }),
@@ -29,23 +19,47 @@ export const getStatsSummary = async (userId) => {
       { $match: { userId: userObjectId, status: 'Completed' } },
       { $group: { _id: null, totalMinutes: { $sum: '$reducedDuration' } } },
     ]),
-    TaskInstance.aggregate([
-      { $match: { userId: userObjectId, status: 'Completed' } },
-      { $group: { _id: '$category', totalMinutes: { $sum: '$reducedDuration' } } },
-    ]),
-    TaskInstance.aggregate([
-      { $match: { userId: userObjectId, status: 'Completed' } },
-      { $group: { _id: '$name', count: { $sum: 1 } } },
-      { $sort: { count: -1 } },
-      { $limit: 1 },
-    ]),
-    TaskInstance.aggregate([
-      { $match: { userId: userObjectId, status: 'Missed' } },
-      { $group: { _id: '$name', count: { $sum: 1 } } },
-      { $sort: { count: -1 } },
-      { $limit: 1 },
-    ])
-  ]);
+  ];
+
+  if (full) {
+    promises.push(
+      TaskInstance.aggregate([
+        { $match: { userId: userObjectId, status: 'Completed' } },
+        { $group: { _id: '$category', totalMinutes: { $sum: '$reducedDuration' } } },
+      ]),
+      TaskInstance.aggregate([
+        { $match: { userId: userObjectId, status: 'Completed' } },
+        { $group: { _id: '$name', count: { $sum: 1 } } },
+        { $sort: { count: -1 } },
+        { $limit: 1 },
+      ]),
+      TaskInstance.aggregate([
+        { $match: { userId: userObjectId, status: 'Missed' } },
+        { $group: { _id: '$name', count: { $sum: 1 } } },
+        { $sort: { count: -1 } },
+        { $limit: 1 },
+      ])
+    );
+  }
+
+  const results = await Promise.all(promises);
+
+  const user = results[0];
+  const totalTasks = results[1];
+  const completed = results[2];
+  const missed = results[3];
+  const unavoidable = results[4];
+  const focusTimeAggregate = results[5];
+
+  let categoryHoursAggregate = [];
+  let mostCompletedAggregate = [];
+  let mostMissedAggregate = [];
+
+  if (full) {
+    categoryHoursAggregate = results[6];
+    mostCompletedAggregate = results[7];
+    mostMissedAggregate = results[8];
+  }
 
   // Focus Hours (Sum of reducedDuration of Completed tasks)
   const focusHours = focusTimeAggregate.length > 0 ? Number((focusTimeAggregate[0].totalMinutes / 60).toFixed(2)) : 0;
@@ -60,15 +74,17 @@ export const getStatsSummary = async (userId) => {
 
   // Category-wise hours
   const categoryHours = {};
-  categoryHoursAggregate.forEach((item) => {
-    categoryHours[item._id] = Number((item.totalMinutes / 60).toFixed(2));
-  });
+  if (full) {
+    categoryHoursAggregate.forEach((item) => {
+      categoryHours[item._id] = Number((item.totalMinutes / 60).toFixed(2));
+    });
+  }
 
   // Most completed task name
-  const mostCompletedTask = mostCompletedAggregate.length > 0 ? mostCompletedAggregate[0]._id : 'None';
+  const mostCompletedTask = full && mostCompletedAggregate.length > 0 ? mostCompletedAggregate[0]._id : 'None';
 
   // Most missed task name
-  const mostMissedTask = mostMissedAggregate.length > 0 ? mostMissedAggregate[0]._id : 'None';
+  const mostMissedTask = full && mostMissedAggregate.length > 0 ? mostMissedAggregate[0]._id : 'None';
 
   // Productivity Score
   // Productivity Score = Completion Percentage

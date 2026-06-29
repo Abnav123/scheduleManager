@@ -15,17 +15,6 @@ import moment from 'moment-timezone';
  * Lazy creation when user views a day.
  */
 export const generateDailyTasks = async (dateStr, userId) => {
-  // Clean up any orphaned task instances whose timetable has been deleted
-  const activeTimetables = await Timetable.find({ userId }).select('_id');
-  const activeIds = activeTimetables.map(t => t._id);
-  const deletedRes = await TaskInstance.deleteMany({
-    userId,
-    timetableId: { $nin: activeIds }
-  });
-  if (deletedRes.deletedCount > 0) {
-    await updateStreak(userId);
-  }
-
   // Find active timetable for this date
   const targetDate = moment.tz(dateStr, 'Asia/Kolkata').startOf('day').toDate();
   const timetable = await Timetable.findOne({
