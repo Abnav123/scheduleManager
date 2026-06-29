@@ -109,7 +109,6 @@ const History = () => {
   const [selectedTimetableId, setSelectedTimetableId] = useState('');
   const [selectedTimetable, setSelectedTimetable] = useState(null);
   const [blueprintDate, setBlueprintDate] = useState(getTodayIST());
-  const [activeTimetable, setActiveTimetable] = useState(null);
 
   // Fetch timetables list for blueprint view when viewMode is 'blueprint'
   useEffect(() => {
@@ -118,16 +117,22 @@ const History = () => {
         try {
           const res = await api.get('/timetables');
           setTimetables(res.data);
-          if (res.data.length > 0) {
-            const active = res.data.find(t => t.isActive);
-            setActiveTimetable(active || null);
-            const defaultSelect = active || res.data[0];
+          
+          // Find timetable active for today
+          const today = moment().startOf('day');
+          const activeForToday = res.data.find(t => {
+            const start = moment(t.startDate).startOf('day');
+            const end = moment(t.endDate).endOf('day');
+            return today.isSameOrAfter(start) && today.isSameOrBefore(end);
+          });
+
+          const defaultSelect = activeForToday || res.data[0] || null;
+          if (defaultSelect) {
             setSelectedTimetableId(defaultSelect._id);
             setSelectedTimetable(defaultSelect);
           } else {
             setSelectedTimetableId('');
             setSelectedTimetable(null);
-            setActiveTimetable(null);
           }
         } catch (err) {
           console.error('Failed to fetch timetables', err);
@@ -139,9 +144,21 @@ const History = () => {
 
   const handleSelectBlueprintDate = (dateStr) => {
     setBlueprintDate(dateStr);
-    if (activeTimetable) {
-      setSelectedTimetableId(activeTimetable._id);
-      setSelectedTimetable(activeTimetable);
+    
+    // Find active timetable for this specific calendar date
+    const target = moment(dateStr, 'YYYY-MM-DD');
+    const activeForDate = timetables.find(t => {
+      const start = moment(t.startDate).startOf('day');
+      const end = moment(t.endDate).endOf('day');
+      return target.isSameOrAfter(start) && target.isSameOrBefore(end);
+    });
+
+    if (activeForDate) {
+      setSelectedTimetableId(activeForDate._id);
+      setSelectedTimetable(activeForDate);
+    } else {
+      setSelectedTimetableId('');
+      setSelectedTimetable(null);
     }
   };
 
@@ -154,6 +171,19 @@ const History = () => {
       setSelectedTimetable(null);
     }
   }, [selectedTimetableId, timetables]);
+
+  const getTasksToDisplay = () => {
+    if (!selectedTimetable) return [];
+    const dateStr = moment(blueprintDate).format('YYYY-MM-DD');
+    const override = selectedTimetable.overrides?.find(ov => ov.date === dateStr);
+    return override ? override.tasks : selectedTimetable.defaultSchedule;
+  };
+  
+  const isOverrideActive = () => {
+    if (!selectedTimetable) return false;
+    const dateStr = moment(blueprintDate).format('YYYY-MM-DD');
+    return selectedTimetable.overrides?.some(ov => ov.date === dateStr);
+  };
 
   // Fetch timeline details for a date
   const fetchTimeline = useCallback(async (targetDate) => {
@@ -438,23 +468,34 @@ const History = () => {
                     <h3 className="text-2xl font-bold uppercase tracking-wider font-mono">
                       {selectedTimetable.name}
                     </h3>
-                    <div className="flex justify-between items-center mt-1">
+                    <div className="flex flex-wrap justify-between items-center mt-1.5 gap-2">
                       <p className="text-xs text-neutral-400 font-mono font-bold">
-                        Status: <span className={selectedTimetable.isActive ? 'text-green-400' : 'text-neutral-400'}>{selectedTimetable.isActive ? 'ACTIVE' : 'INACTIVE'}</span>
+                        Range: {moment(selectedTimetable.startDate).format('DD MMM YYYY')} — {moment(selectedTimetable.endDate).format('DD MMM YYYY')}
                       </p>
-                      <p className="text-[10px] text-neutral-400 font-mono font-bold">
-                        Active on: {moment(blueprintDate).format('DD MMM YYYY')}
-                      </p>
+                      <div className="flex items-center gap-2">
+                        {isOverrideActive() ? (
+                          <span className="text-[9px] px-1.5 py-0.5 bg-[#ffff00] text-black border border-white font-mono uppercase font-bold shadow-[1px_1px_0px_0px_rgba(255,255,255,1)]">
+                            Override Day
+                          </span>
+                        ) : (
+                          <span className="text-[9px] px-1.5 py-0.5 bg-neutral-700 text-white border border-white font-mono uppercase font-bold shadow-[1px_1px_0px_0px_rgba(255,255,255,1)]">
+                            Default Blueprint
+                          </span>
+                        )}
+                        <span className="text-[10px] text-neutral-400 font-mono font-bold">
+                          Selected Date: {moment(blueprintDate).format('DD MMM YYYY')}
+                        </span>
+                      </div>
                     </div>
                   </div>
 
                   <div>
                     <h4 className="text-sm font-bold uppercase tracking-wider mb-4 border-b border-neutral-700 pb-1 font-mono text-neutral-300">
-                      Default Tasks Blueprint ({selectedTimetable.defaultSchedule.length} tasks)
+                      Tasks Schedule ({getTasksToDisplay().length} tasks)
                     </h4>
                     <div className="flex flex-col gap-4">
-                      {selectedTimetable.defaultSchedule.length > 0 ? (
-                        selectedTimetable.defaultSchedule.map((task, idx) => (
+                      {getTasksToDisplay().length > 0 ? (
+                        getTasksToDisplay().map((task, idx) => (
                           <div key={idx} className="p-4 border-2 border-white bg-[#0e1017] flex items-center justify-between gap-4 brutalist-card">
                             <div>
                               <div className="flex items-center gap-2 mb-1">
@@ -479,13 +520,13 @@ const History = () => {
                           </div>
                         ))
                       ) : (
-                        <p className="text-xs text-neutral-500 italic font-mono">No tasks blueprint defined.</p>
+                        <p className="text-xs text-neutral-500 italic font-mono">No tasks active on this day.</p>
                       )}
                     </div>
                   </div>
                 </div>
               ) : (
-                <div className="text-center py-12 text-sm italic text-neutral-500 font-mono border-2 border-white bg-[#0e1017] p-6 brutalist-card">
+                <div className="text-center py-12 text-sm italic text-neutral-500 font-mono border-2 border-white bg-[#0e1017] p-6 brutalist-card animate-fade-in">
                   Select a timetable blueprint or click a calendar date to inspect task templates.
                 </div>
               )}
