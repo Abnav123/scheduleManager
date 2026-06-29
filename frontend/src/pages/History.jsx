@@ -154,12 +154,7 @@ const History = () => {
     const override = selectedTimetable.overrides?.find(ov => ov.date === dateStr);
     return override ? override.tasks : selectedTimetable.defaultSchedule;
   };
-  
-  const isOverrideActive = () => {
-    if (!selectedTimetable) return false;
-    const dateStr = moment(blueprintDate).format('YYYY-MM-DD');
-    return selectedTimetable.overrides?.some(ov => ov.date === dateStr);
-  };
+
 
   // Fetch timeline details for a date
   const fetchTimeline = useCallback(async (targetDate) => {
@@ -432,15 +427,6 @@ const History = () => {
                         Range: {moment(selectedTimetable.startDate).format('DD MMM YYYY')} — {moment(selectedTimetable.endDate).format('DD MMM YYYY')}
                       </p>
                       <div className="flex items-center gap-2">
-                        {isOverrideActive() ? (
-                          <span className="text-[9px] px-1.5 py-0.5 bg-[#ffff00] text-black border border-white font-mono uppercase font-bold shadow-[1px_1px_0px_0px_rgba(255,255,255,1)]">
-                            Override Day
-                          </span>
-                        ) : (
-                          <span className="text-[9px] px-1.5 py-0.5 bg-neutral-700 text-white border border-white font-mono uppercase font-bold shadow-[1px_1px_0px_0px_rgba(255,255,255,1)]">
-                            Default Blueprint
-                          </span>
-                        )}
                         <span className="text-[10px] text-neutral-400 font-mono font-bold">
                           Selected Date: {moment(blueprintDate).format('DD MMM YYYY')}
                         </span>
