@@ -14,7 +14,7 @@ const Goals = React.lazy(() => import('./pages/Goals.jsx'));
 const NotesPlaceholder = React.lazy(() => import('./pages/NotesPlaceholder.jsx'));
 const Punishments = React.lazy(() => import('./pages/Punishments.jsx'));
 
-import { ToastProvider } from './context/ToastContext.jsx';
+import { ToastProvider, useToast } from './context/ToastContext.jsx';
 import api from './utils/api.js';
 import { RefreshCw } from 'lucide-react';
 
