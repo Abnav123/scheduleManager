@@ -2,6 +2,11 @@ import mongoose from 'mongoose';
 
 const taskInstanceSchema = new mongoose.Schema(
   {
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+    },
     timetableId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Timetable',
@@ -87,8 +92,9 @@ const taskInstanceSchema = new mongoose.Schema(
   }
 );
 
-// Index to search tasks by date quickly
-taskInstanceSchema.index({ date: 1 });
+// Indexes to search tasks quickly
+taskInstanceSchema.index({ userId: 1, date: 1 });
+taskInstanceSchema.index({ userId: 1, status: 1 });
 
 const TaskInstance = mongoose.model('TaskInstance', taskInstanceSchema);
 export default TaskInstance;

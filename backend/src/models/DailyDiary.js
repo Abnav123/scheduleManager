@@ -2,10 +2,14 @@ import mongoose from 'mongoose';
 
 const dailyDiarySchema = new mongoose.Schema(
   {
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+    },
     date: {
       type: String,
       required: true,
-      unique: true, // Unique per date
     },
     title: {
       type: String,
@@ -30,6 +34,8 @@ const dailyDiarySchema = new mongoose.Schema(
     timestamps: true,
   }
 );
+
+dailyDiarySchema.index({ userId: 1, date: 1 }, { unique: true });
 
 const DailyDiary = mongoose.model('DailyDiary', dailyDiarySchema);
 export default DailyDiary;

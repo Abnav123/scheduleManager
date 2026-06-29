@@ -1,13 +1,9 @@
-import mongoose from 'mongoose';
 import TaskInstance from '../models/TaskInstance.js';
 import Timetable from '../models/Timetable.js';
 import User from '../models/User.js';
 import {
-  getTodayIST,
   getNowIST,
   parseISTTime,
-  isWithinLastFiveMinutes,
-  isPastEndTime,
   getDiffMinutes,
 } from '../utils/dateHelper.js';
 import { checkAndUnlockAchievements } from './achievementService.js';
@@ -15,23 +11,25 @@ import { updateGoalProgress } from './goalService.js';
 import moment from 'moment-timezone';
 
 /**
- * Generate task instances for a specific date if they don't already exist.
+ * Generate task instances for a specific date if they don't already exist for the user.
  * Lazy creation when user views a day.
  */
-export const generateDailyTasks = async (dateStr) => {
+export const generateDailyTasks = async (dateStr, userId) => {
   // Clean up any orphaned task instances whose timetable has been deleted
-  const activeTimetables = await Timetable.find().select('_id');
+  const activeTimetables = await Timetable.find({ userId }).select('_id');
   const activeIds = activeTimetables.map(t => t._id);
   const deletedRes = await TaskInstance.deleteMany({
+    userId,
     timetableId: { $nin: activeIds }
   });
   if (deletedRes.deletedCount > 0) {
-    await updateStreak();
+    await updateStreak(userId);
   }
 
   // Find active timetable for this date
   const targetDate = moment.tz(dateStr, 'Asia/Kolkata').startOf('day').toDate();
   const timetable = await Timetable.findOne({
+    userId,
     startDate: { $lte: targetDate },
     endDate: { $gte: targetDate },
   });
@@ -45,7 +43,7 @@ export const generateDailyTasks = async (dateStr) => {
   const taskTemplates = override ? override.tasks : timetable.defaultSchedule;
 
   // Get existing task instances for this date
-  let existingInstances = await TaskInstance.find({ date: dateStr }).sort({ createdAt: 1 });
+  let existingInstances = await TaskInstance.find({ userId, date: dateStr }).sort({ createdAt: 1 });
 
   // Clean up duplicate task instances for this date (keep the earliest one, delete the rest)
   const seenKeys = new Set();
@@ -53,7 +51,7 @@ export const generateDailyTasks = async (dateStr) => {
   for (const inst of existingInstances) {
     const key = `${inst.name}_${inst.startTime}_${inst.endTime}`;
     if (seenKeys.has(key)) {
-      await TaskInstance.deleteOne({ _id: inst._id });
+      await TaskInstance.deleteOne({ _id: inst._id, userId });
     } else {
       seenKeys.add(key);
       uniqueInstances.push(inst);
@@ -73,20 +71,20 @@ export const generateDailyTasks = async (dateStr) => {
       );
       if (!stillExistsInTemplate) {
         if (inst.xpSpent > 0) {
-          const user = await User.findOne({});
+          const user = await User.findById(userId);
           if (user) {
             user.xp += inst.xpSpent;
             user.xpSpent = Math.max(0, user.xpSpent - inst.xpSpent);
             await user.save();
           }
         }
-        await TaskInstance.deleteOne({ _id: inst._id });
+        await TaskInstance.deleteOne({ _id: inst._id, userId });
       }
     }
   }
 
   // Reload existing instances after cleanup
-  const freshInstances = await TaskInstance.find({ date: dateStr });
+  const freshInstances = await TaskInstance.find({ userId, date: dateStr });
 
   for (const template of taskTemplates) {
     // Check if this template already has an instance (ignore endTime to account for duration reductions)
@@ -121,6 +119,7 @@ export const generateDailyTasks = async (dateStr) => {
       }
 
       await TaskInstance.create({
+        userId,
         timetableId: timetable._id,
         name: template.name,
         category: template.category,
@@ -140,14 +139,14 @@ export const generateDailyTasks = async (dateStr) => {
   }
 
   // If any new tasks were created, or if we need to check expirations
-  await checkAndUpdateExpiredTasksForDate(dateStr);
+  await checkAndUpdateExpiredTasksForDate(dateStr, userId);
 
-  return await TaskInstance.find({ date: dateStr }).sort({ startTime: 1 });
+  return await TaskInstance.find({ userId, date: dateStr }).sort({ startTime: 1 });
 };
 
 /**
  * Checks and updates status of tasks that have expired.
- * Runs on cron or when querying today's/past tasks.
+ * Runs on cron globally.
  */
 export const checkAndUpdateExpiredTasks = async () => {
   const now = getNowIST().toDate();
@@ -162,26 +161,27 @@ export const checkAndUpdateExpiredTasks = async () => {
     return;
   }
 
-  let streakBroken = false;
+  const userIdsToUpdate = new Set();
 
   for (const task of expiredTasks) {
     task.status = 'Missed';
     task.punishmentStatus = 'Pending';
     await task.save();
-    streakBroken = true;
+    userIdsToUpdate.add(task.userId.toString());
   }
 
-  if (streakBroken) {
-    await updateStreak();
+  for (const userId of userIdsToUpdate) {
+    await updateStreak(userId);
   }
 };
 
 /**
- * Helper to update expired tasks on a specific date query
+ * Helper to update expired tasks on a specific date query for a user
  */
-export const checkAndUpdateExpiredTasksForDate = async (dateStr) => {
+export const checkAndUpdateExpiredTasksForDate = async (dateStr, userId) => {
   const now = getNowIST();
   const tasks = await TaskInstance.find({
+    userId,
     date: dateStr,
     status: { $in: ['Upcoming', 'In Progress', 'Ready To Complete'] },
   });
@@ -208,15 +208,15 @@ export const checkAndUpdateExpiredTasksForDate = async (dateStr) => {
   }
 
   if (changed) {
-    await updateStreak();
+    await updateStreak(userId);
   }
 };
 
 /**
  * Mark a task as completed (validating 5 minute completion window)
  */
-export const completeTask = async (taskId, adminUser) => {
-  const task = await TaskInstance.findById(taskId);
+export const completeTask = async (taskId, user) => {
+  const task = await TaskInstance.findOne({ _id: taskId, userId: user._id });
   if (!task) {
     throw new Error('Task not found');
   }
@@ -250,19 +250,19 @@ export const completeTask = async (taskId, adminUser) => {
   
   await task.save();
 
-  // Award XP to Admin User
-  adminUser.xp += xpEarned;
-  await adminUser.save();
+  // Award XP to User
+  user.xp += xpEarned;
+  await user.save();
 
   // Recalculate Streak
-  await updateStreak();
+  await updateStreak(user._id);
 
   // Update goals progress
-  await updateGoalProgress('TasksCompleted', 1, task.category);
-  await updateGoalProgress('FocusHours', task.reducedDuration / 60, task.category);
+  await updateGoalProgress(user._id, 'TasksCompleted', 1, task.category);
+  await updateGoalProgress(user._id, 'FocusHours', task.reducedDuration / 60, task.category);
 
   // Check achievements
-  await checkAndUnlockAchievements(adminUser);
+  await checkAndUnlockAchievements(user);
 
   return task;
 };
@@ -270,8 +270,8 @@ export const completeTask = async (taskId, adminUser) => {
 /**
  * Spend XP to reduce a future task's duration
  */
-export const reduceTaskDuration = async (taskId, minutes, adminUser) => {
-  const task = await TaskInstance.findById(taskId);
+export const reduceTaskDuration = async (taskId, minutes, user) => {
+  const task = await TaskInstance.findOne({ _id: taskId, userId: user._id });
   if (!task) {
     throw new Error('Task not found');
   }
@@ -296,14 +296,14 @@ export const reduceTaskDuration = async (taskId, minutes, adminUser) => {
     throw new Error(`Maximum allowed reduction is 25% (${maxReduction} mins). You requested to reduce it by ${newTotalReduction} mins total.`);
   }
 
-  if (adminUser.xp < minutes) {
-    throw new Error(`Insufficient XP. You need ${minutes} XP, but you have ${adminUser.xp} XP.`);
+  if (user.xp < minutes) {
+    throw new Error(`Insufficient XP. You need ${minutes} XP, but you have ${user.xp} XP.`);
   }
 
   // Deduct XP
-  adminUser.xp -= minutes;
-  adminUser.xpSpent += minutes;
-  await adminUser.save();
+  user.xp -= minutes;
+  user.xpSpent += minutes;
+  await user.save();
 
   // Update task
   task.reducedDuration = task.originalDuration - newTotalReduction;
@@ -317,7 +317,7 @@ export const reduceTaskDuration = async (taskId, minutes, adminUser) => {
   await task.save();
 
   // Check achievements (since XP is spent/earned)
-  await checkAndUnlockAchievements(adminUser);
+  await checkAndUnlockAchievements(user);
 
   return task;
 };
@@ -325,8 +325,8 @@ export const reduceTaskDuration = async (taskId, minutes, adminUser) => {
 /**
  * Mark a task as Unavoidable
  */
-export const markUnavoidable = async (taskId, reason) => {
-  const task = await TaskInstance.findById(taskId);
+export const markUnavoidable = async (taskId, reason, userId) => {
+  const task = await TaskInstance.findOne({ _id: taskId, userId });
   if (!task) {
     throw new Error('Task not found');
   }
@@ -346,7 +346,7 @@ export const markUnavoidable = async (taskId, reason) => {
   await task.save();
 
   // Streak calculations
-  await updateStreak();
+  await updateStreak(userId);
 
   return task;
 };
@@ -359,8 +359,8 @@ export const markUnavoidable = async (taskId, reason) => {
  * 3. The user has 0 missed tasks.
  * (If a day had no tasks or only unavoidable tasks, it does not break the streak, but does not increment it.)
  */
-export const updateStreak = async () => {
-  const user = await User.findOne({});
+export const updateStreak = async (userId) => {
+  const user = await User.findById(userId);
   if (!user) return;
 
   const now = getNowIST();
@@ -370,6 +370,7 @@ export const updateStreak = async () => {
   // Fetch all task instances in the last 366 days in a single query
   const oneYearAgo = now.clone().subtract(366, 'days').startOf('day').toDate();
   const allTasks = await TaskInstance.find({
+    userId,
     scheduledStart: { $gte: oneYearAgo }
   });
 

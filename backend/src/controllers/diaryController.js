@@ -23,14 +23,15 @@ export const saveDiaryEntry = async (req, res, next) => {
 
     // If content is empty or blank, delete the diary entry for this date
     if (!content || content.trim() === '') {
-      await DailyDiary.findOneAndDelete({ date });
+      await DailyDiary.findOneAndDelete({ date, userId: req.user._id });
       return res.json({ message: 'Diary entry cleared', cleared: true });
     }
 
     // Find and update, or insert if missing (upsert)
     const diary = await DailyDiary.findOneAndUpdate(
-      { date },
+      { date, userId: req.user._id },
       {
+        userId: req.user._id,
         title: title || '',
         content,
         mood: mood || '',
@@ -53,7 +54,7 @@ export const saveDiaryEntry = async (req, res, next) => {
 export const getDiaryEntryByDate = async (req, res, next) => {
   try {
     const date = req.query.date || getTodayIST();
-    const diary = await DailyDiary.findOne({ date });
+    const diary = await DailyDiary.findOne({ date, userId: req.user._id });
 
     if (!diary) {
       return res.json(null); // Return null instead of error so frontend knows no entry exists
@@ -72,7 +73,7 @@ export const getDiaryEntryByDate = async (req, res, next) => {
  */
 export const deleteDiaryEntry = async (req, res, next) => {
   try {
-    const diary = await DailyDiary.findById(req.params.id);
+    const diary = await DailyDiary.findOne({ _id: req.params.id, userId: req.user._id });
     if (!diary) {
       res.status(404);
       throw new Error('Diary entry not found');
@@ -97,7 +98,7 @@ export const deleteDiaryEntry = async (req, res, next) => {
 export const searchDiaryEntries = async (req, res, next) => {
   try {
     const { query, tag } = req.query;
-    const filter = {};
+    const filter = { userId: req.user._id };
 
     if (query) {
       filter.$or = [

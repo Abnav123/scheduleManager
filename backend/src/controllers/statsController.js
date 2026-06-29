@@ -6,14 +6,14 @@ import DailyDiary from '../models/DailyDiary.js';
 import DailyReflection from '../models/DailyReflection.js';
 import Goal from '../models/Goal.js';
 import Achievement from '../models/Achievement.js';
-import User from '../models/User.js';
 import {
   getStatsSummary,
   getMonthlyCalendar,
   getProductivityHeatmap,
   getProductivityReport,
 } from '../services/statsService.js';
-import { generateDailyTasks, checkAndUpdateExpiredTasksForDate } from '../services/taskService.js';
+import { generateDailyTasks } from '../services/taskService.js';
+import { seedAchievements } from '../services/achievementService.js';
 import { getTodayIST, getNowIST } from '../utils/dateHelper.js';
 import moment from 'moment-timezone';
 
@@ -50,17 +50,19 @@ const getQuoteForDate = (dateStr) => {
 export const getDashboardData = async (req, res, next) => {
   try {
     const todayStr = getTodayIST();
+    const userId = req.user._id;
     
     // Ensure today's task instances are created and updated
-    await generateDailyTasks(todayStr);
+    await generateDailyTasks(todayStr, userId);
 
     const now = getNowIST().toDate();
     const [stats, todayTasks, todayDiary, todayReflection, activeGoals] = await Promise.all([
-      getStatsSummary(),
-      TaskInstance.find({ date: todayStr }).sort({ startTime: 1 }),
-      DailyDiary.findOne({ date: todayStr }),
-      DailyReflection.findOne({ date: todayStr }),
+      getStatsSummary(userId),
+      TaskInstance.find({ userId, date: todayStr }).sort({ startTime: 1 }),
+      DailyDiary.findOne({ userId, date: todayStr }),
+      DailyReflection.findOne({ userId, date: todayStr }),
       Goal.find({
+        userId,
         status: 'Active',
         startDate: { $lte: now },
         endDate: { $gte: now },
@@ -142,7 +144,7 @@ export const getCalendarData = async (req, res, next) => {
       res.status(400);
       throw new Error('Year and month parameters are required');
     }
-    const calendar = await getMonthlyCalendar(year, month);
+    const calendar = await getMonthlyCalendar(req.user._id, year, month);
     res.json(calendar);
   } catch (error) {
     next(error);
@@ -156,7 +158,7 @@ export const getCalendarData = async (req, res, next) => {
  */
 export const getHeatmapData = async (req, res, next) => {
   try {
-    const heatmap = await getProductivityHeatmap();
+    const heatmap = await getProductivityHeatmap(req.user._id);
     res.json(heatmap);
   } catch (error) {
     next(error);
@@ -175,7 +177,7 @@ export const getReportData = async (req, res, next) => {
       res.status(400);
       throw new Error("Report type must be 'weekly' or 'monthly'");
     }
-    const report = await getProductivityReport(type);
+    const report = await getProductivityReport(req.user._id, type);
     res.json(report);
   } catch (error) {
     next(error);
@@ -189,7 +191,8 @@ export const getReportData = async (req, res, next) => {
  */
 export const getAchievementsList = async (req, res, next) => {
   try {
-    const achievements = await Achievement.find().sort({ unlockedAt: -1, threshold: 1 });
+    await seedAchievements(req.user._id);
+    const achievements = await Achievement.find({ userId: req.user._id }).sort({ unlockedAt: -1, threshold: 1 });
     res.json(achievements);
   } catch (error) {
     next(error);
@@ -204,22 +207,24 @@ export const getAchievementsList = async (req, res, next) => {
 export const getTimelineData = async (req, res, next) => {
   try {
     const dateStr = req.query.date || getTodayIST();
+    const userId = req.user._id;
+
     if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
       res.status(400);
       throw new Error('Date format must be YYYY-MM-DD');
     }
 
     // Ensure tasks are generated and checked for expiration for the target day
-    await generateDailyTasks(dateStr);
+    await generateDailyTasks(dateStr, userId);
 
     const startOfDay = moment.tz(dateStr, 'Asia/Kolkata').startOf('day').toDate();
     const endOfDay = moment.tz(dateStr, 'Asia/Kolkata').endOf('day').toDate();
 
     const [tasks, diary, reflection, achievementsUnlocked] = await Promise.all([
-      TaskInstance.find({ date: dateStr }).sort({ startTime: 1 }),
-      DailyDiary.findOne({ date: dateStr }),
-      DailyReflection.findOne({ date: dateStr }),
-      Achievement.find({ unlockedAt: { $gte: startOfDay, $lte: endOfDay } })
+      TaskInstance.find({ userId, date: dateStr }).sort({ startTime: 1 }),
+      DailyDiary.findOne({ userId, date: dateStr }),
+      DailyReflection.findOne({ userId, date: dateStr }),
+      Achievement.find({ userId, unlockedAt: { $gte: startOfDay, $lte: endOfDay } })
     ]);
 
     // Compute day summary

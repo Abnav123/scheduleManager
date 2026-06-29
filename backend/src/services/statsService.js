@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import TaskInstance from '../models/TaskInstance.js';
 import User from '../models/User.js';
 import moment from 'moment-timezone';
@@ -5,7 +6,9 @@ import moment from 'moment-timezone';
 /**
  * Get comprehensive statistics for the admin dashboard
  */
-export const getStatsSummary = async () => {
+export const getStatsSummary = async (userId) => {
+  const userObjectId = new mongoose.Types.ObjectId(userId);
+
   const [
     user,
     totalTasks,
@@ -17,27 +20,27 @@ export const getStatsSummary = async () => {
     mostCompletedAggregate,
     mostMissedAggregate
   ] = await Promise.all([
-    User.findOne({}),
-    TaskInstance.countDocuments(),
-    TaskInstance.countDocuments({ status: 'Completed' }),
-    TaskInstance.countDocuments({ status: 'Missed' }),
-    TaskInstance.countDocuments({ status: 'Unavoidable' }),
+    User.findById(userId),
+    TaskInstance.countDocuments({ userId }),
+    TaskInstance.countDocuments({ userId, status: 'Completed' }),
+    TaskInstance.countDocuments({ userId, status: 'Missed' }),
+    TaskInstance.countDocuments({ userId, status: 'Unavoidable' }),
     TaskInstance.aggregate([
-      { $match: { status: 'Completed' } },
+      { $match: { userId: userObjectId, status: 'Completed' } },
       { $group: { _id: null, totalMinutes: { $sum: '$reducedDuration' } } },
     ]),
     TaskInstance.aggregate([
-      { $match: { status: 'Completed' } },
+      { $match: { userId: userObjectId, status: 'Completed' } },
       { $group: { _id: '$category', totalMinutes: { $sum: '$reducedDuration' } } },
     ]),
     TaskInstance.aggregate([
-      { $match: { status: 'Completed' } },
+      { $match: { userId: userObjectId, status: 'Completed' } },
       { $group: { _id: '$name', count: { $sum: 1 } } },
       { $sort: { count: -1 } },
       { $limit: 1 },
     ]),
     TaskInstance.aggregate([
-      { $match: { status: 'Missed' } },
+      { $match: { userId: userObjectId, status: 'Missed' } },
       { $group: { _id: '$name', count: { $sum: 1 } } },
       { $sort: { count: -1 } },
       { $limit: 1 },
@@ -98,12 +101,13 @@ export const getStatsSummary = async () => {
  * Get monthly calendar status mappings.
  * Returns date strings mapped to colors: Green (Completed), Red (Missed), Grey (Unavoidable / Neutral)
  */
-export const getMonthlyCalendar = async (year, month) => {
+export const getMonthlyCalendar = async (userId, year, month) => {
   // Setup date range
   const startOfMonth = moment.tz(`${year}-${month}-01`, 'YYYY-MM-DD', 'Asia/Kolkata').startOf('month');
   const endOfMonth = startOfMonth.clone().endOf('month');
 
   const tasks = await TaskInstance.find({
+    userId,
     scheduledStart: { $gte: startOfMonth.toDate(), $lte: endOfMonth.toDate() },
   });
 
@@ -150,10 +154,11 @@ export const getMonthlyCalendar = async (year, month) => {
 /**
  * Get data formatted for a GitHub-style heatmap (dates + activity counts)
  */
-export const getProductivityHeatmap = async () => {
+export const getProductivityHeatmap = async (userId) => {
   const oneYearAgo = moment.tz('Asia/Kolkata').subtract(1, 'year').startOf('day').toDate();
 
   const completedTasks = await TaskInstance.find({
+    userId,
     status: 'Completed',
     scheduledStart: { $gte: oneYearAgo },
   });
@@ -169,7 +174,7 @@ export const getProductivityHeatmap = async () => {
 /**
  * Generate weekly or monthly productivity reports
  */
-export const getProductivityReport = async (rangeType = 'weekly') => {
+export const getProductivityReport = async (userId, rangeType = 'weekly') => {
   const now = moment.tz('Asia/Kolkata');
   const formatStr = 'YYYY-MM-DD';
 
@@ -189,6 +194,7 @@ export const getProductivityReport = async (rangeType = 'weekly') => {
 
   const getRangeStats = async (start, end) => {
     const tasks = await TaskInstance.find({
+      userId,
       scheduledStart: { $gte: start.toDate(), $lte: end.toDate() },
     });
 

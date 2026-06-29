@@ -84,3 +84,46 @@ export const logout = async (req, res, next) => {
     next(error);
   }
 };
+
+/**
+ * @desc    Register a new user
+ * @route   POST /api/auth/register
+ * @access  Public
+ */
+export const register = async (req, res, next) => {
+  try {
+    const { username, password } = req.body;
+
+    if (!username || !password) {
+      res.status(400);
+      throw new Error('Please enter username and password');
+    }
+
+    const existingUser = await User.findOne({ username });
+    if (existingUser) {
+      res.status(400);
+      throw new Error('Username already exists');
+    }
+
+    // Hash password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    const user = await User.create({
+      username,
+      password: hashedPassword,
+    });
+
+    res.status(201).json({
+      _id: user._id,
+      username: user.username,
+      xp: user.xp,
+      xpSpent: user.xpSpent,
+      currentStreak: user.currentStreak,
+      longestStreak: user.longestStreak,
+      token: generateToken(user._id),
+    });
+  } catch (error) {
+    next(error);
+  }
+};

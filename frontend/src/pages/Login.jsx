@@ -4,7 +4,8 @@ import { AuthContext } from '../context/AuthContextValue.jsx';
 import { ShieldAlert, KeyRound, User } from 'lucide-react';
 
 const Login = () => {
-  const { login, isAuthenticated } = useContext(AuthContext);
+  const { login, register, isAuthenticated } = useContext(AuthContext);
+  const [isRegisterMode, setIsRegisterMode] = useState(false);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -29,10 +30,14 @@ const Login = () => {
     setIsSubmitting(true);
 
     try {
-      await login(username, password);
+      if (isRegisterMode) {
+        await register(username, password);
+      } else {
+        await login(username, password);
+      }
       navigate('/');
     } catch (err) {
-      setError(err.message || 'Invalid username or password.');
+      setError(err.message || 'Error occurred. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -46,11 +51,11 @@ const Login = () => {
         {/* Heading */}
         <div className="text-center mb-8">
           <h2 className="text-2xl font-bold font-mono tracking-wider text-white uppercase">
-            SHUTTLE LOGIN
+            {isRegisterMode ? 'CREWMATE REGISTRATION' : 'SHUTTLE LOGIN'}
           </h2>
           <div className="w-24 h-1 bg-white mx-auto mt-2"></div>
           <p className="text-xs text-neutral-400 font-mono italic mt-2">
-            "Are you an Impostor or Crewmate?"
+            {isRegisterMode ? '"Register a new identity on the bridge"' : '"Are you an Impostor or Crewmate?"'}
           </p>
         </div>
 
@@ -62,7 +67,7 @@ const Login = () => {
           </div>
         )}
 
-        {/* Login Inputs Form */}
+        {/* Inputs Form */}
         <form onSubmit={handleSubmit} className="flex flex-col gap-5 text-white">
           {/* Username Input */}
           <div className="flex flex-col gap-1">
@@ -76,7 +81,7 @@ const Login = () => {
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                placeholder="e.g. admin"
+                placeholder="e.g. crewmate1"
                 disabled={isSubmitting}
                 className="w-full pl-9 pr-4 py-2.5 border-2 border-white text-sm transition-all focus:ring-0 rounded-none bg-[#0e1017] text-white"
               />
@@ -109,9 +114,25 @@ const Login = () => {
             disabled={isSubmitting}
             className="btn-blue w-full py-3"
           >
-            {isSubmitting ? 'Verifying signature...' : 'Unfurl Scheduler'}
+            {isSubmitting
+              ? (isRegisterMode ? 'Registering identity...' : 'Verifying signature...')
+              : (isRegisterMode ? 'Deploy Identity' : 'Unfurl Scheduler')}
           </button>
         </form>
+
+        {/* Switch Mode Button */}
+        <div className="text-center mt-6">
+          <button
+            type="button"
+            onClick={() => {
+              setIsRegisterMode(!isRegisterMode);
+              setError('');
+            }}
+            className="text-xs font-mono text-blue-400 hover:text-blue-300 underline uppercase tracking-wider font-bold"
+          >
+            {isRegisterMode ? 'Already registered? Sign In' : 'Need an identity? Register'}
+          </button>
+        </div>
 
         {/* Footer details */}
         <p className="text-[10px] text-center text-neutral-500 font-mono mt-8 uppercase tracking-wider font-bold">

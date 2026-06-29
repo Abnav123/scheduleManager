@@ -4,11 +4,12 @@ import { getNowIST } from '../utils/dateHelper.js';
 /**
  * Increment the currentValue of active goals matching type (and optional category)
  */
-export const updateGoalProgress = async (type, incrementVal, category = null) => {
+export const updateGoalProgress = async (userId, type, incrementVal, category = null) => {
   const now = getNowIST().toDate();
   
   // Find active goals of the matching type where current time falls within start & end dates
   const query = {
+    userId,
     type,
     status: 'Active',
     startDate: { $lte: now },

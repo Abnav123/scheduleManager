@@ -30,6 +30,7 @@ export const createGoal = async (req, res, next) => {
     }
 
     const goal = await Goal.create({
+      userId: req.user._id,
       name,
       targetValue: Number(targetValue),
       currentValue: 0,
@@ -54,7 +55,7 @@ export const createGoal = async (req, res, next) => {
 export const getGoals = async (req, res, next) => {
   try {
     const { status } = req.query;
-    const filter = {};
+    const filter = { userId: req.user._id };
     
     if (status) {
       filter.status = status;
@@ -63,6 +64,7 @@ export const getGoals = async (req, res, next) => {
     // Auto-update expired Active goals to 'Failed' if end date passed
     const now = getNowIST().toDate();
     const expiredActiveGoals = await Goal.find({
+      userId: req.user._id,
       status: 'Active',
       endDate: { $lt: now },
     });
@@ -87,7 +89,7 @@ export const getGoals = async (req, res, next) => {
 export const updateGoal = async (req, res, next) => {
   try {
     const { name, targetValue, currentValue, type, category, status, startDate, endDate } = req.body;
-    const goal = await Goal.findById(req.params.id);
+    const goal = await Goal.findOne({ _id: req.params.id, userId: req.user._id });
 
     if (!goal) {
       res.status(404);
@@ -137,7 +139,7 @@ export const updateGoal = async (req, res, next) => {
  */
 export const deleteGoal = async (req, res, next) => {
   try {
-    const goal = await Goal.findById(req.params.id);
+    const goal = await Goal.findOne({ _id: req.params.id, userId: req.user._id });
     if (!goal) {
       res.status(404);
       throw new Error('Goal not found');

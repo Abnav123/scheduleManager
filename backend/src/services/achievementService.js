@@ -11,13 +11,13 @@ export const DEFAULT_ACHIEVEMENTS = [
 ];
 
 /**
- * Seed achievements if database is empty
+ * Seed achievements if database is empty for this user
  */
-export const seedAchievements = async () => {
+export const seedAchievements = async (userId) => {
   for (const ach of DEFAULT_ACHIEVEMENTS) {
-    const existing = await Achievement.findOne({ name: ach.name });
+    const existing = await Achievement.findOne({ userId, name: ach.name });
     if (!existing) {
-      await Achievement.create(ach);
+      await Achievement.create({ ...ach, userId });
     }
   }
 };
@@ -26,22 +26,22 @@ export const seedAchievements = async () => {
  * Check and unlock achievements for the current user
  */
 export const checkAndUnlockAchievements = async (user) => {
-  // Ensure default achievements are seeded
-  await seedAchievements();
+  // Ensure default achievements are seeded for this user
+  await seedAchievements(user._id);
 
   // Get metrics
-  const totalCompletedTasks = await TaskInstance.countDocuments({ status: 'Completed' });
+  const totalCompletedTasks = await TaskInstance.countDocuments({ userId: user._id, status: 'Completed' });
   
   const focusTimeAggregate = await TaskInstance.aggregate([
-    { $match: { status: 'Completed' } },
+    { $match: { userId: user._id, status: 'Completed' } },
     { $group: { _id: null, totalMinutes: { $sum: '$reducedDuration' } } },
   ]);
   const totalFocusHours = focusTimeAggregate.length > 0 ? focusTimeAggregate[0].totalMinutes / 60 : 0;
   
   const totalXpEarned = user.xp + user.xpSpent;
 
-  // Find all locked achievements
-  const lockedAchievements = await Achievement.find({ unlockedAt: null });
+  // Find all locked achievements for this user
+  const lockedAchievements = await Achievement.find({ userId: user._id, unlockedAt: null });
 
   for (const ach of lockedAchievements) {
     let qualifies = false;
@@ -66,7 +66,7 @@ export const checkAndUnlockAchievements = async (user) => {
     if (qualifies) {
       ach.unlockedAt = new Date();
       await ach.save();
-      console.log(`ACHIEVEMENT UNLOCKED: ${ach.name}`);
+      console.log(`ACHIEVEMENT UNLOCKED: ${ach.name} for user ${user.username}`);
     }
   }
 };

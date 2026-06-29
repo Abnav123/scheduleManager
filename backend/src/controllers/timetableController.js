@@ -5,17 +5,17 @@ import { toISTDateString } from '../utils/dateHelper.js';
 import moment from 'moment-timezone';
 import { updateStreak } from '../services/taskService.js';
 
-const refundXpForTasks = async (filter) => {
+const refundXpForTasks = async (filter, userId) => {
   try {
     const tasksToRefund = await TaskInstance.find(filter);
     const totalRefund = tasksToRefund.reduce((sum, t) => sum + (t.xpSpent || 0), 0);
     if (totalRefund > 0) {
-      const user = await User.findOne({});
+      const user = await User.findById(userId);
       if (user) {
         user.xp += totalRefund;
         user.xpSpent = Math.max(0, user.xpSpent - totalRefund);
         await user.save();
-        console.log(`Refunded ${totalRefund} XP to user. New XP: ${user.xp}`);
+        console.log(`Refunded ${totalRefund} XP to user ${user.username}. New XP: ${user.xp}`);
       }
     }
   } catch (err) {
@@ -83,8 +83,9 @@ export const createTimetable = async (req, res, next) => {
       throw new Error('Start date must be before end date');
     }
 
-    // Check for overlap with existing timetables
+    // Check for overlap with existing timetables for this user
     const overlap = await Timetable.findOne({
+      userId: req.user._id,
       $or: [
         { startDate: { $lte: end }, endDate: { $gte: start } },
       ],
@@ -96,6 +97,7 @@ export const createTimetable = async (req, res, next) => {
     }
 
     const timetable = await Timetable.create({
+      userId: req.user._id,
       name,
       startDate: start,
       endDate: end,
@@ -116,7 +118,7 @@ export const createTimetable = async (req, res, next) => {
  */
 export const getTimetables = async (req, res, next) => {
   try {
-    const timetables = await Timetable.find().sort({ startDate: -1 });
+    const timetables = await Timetable.find({ userId: req.user._id }).sort({ startDate: -1 });
     res.json(timetables);
   } catch (error) {
     next(error);
@@ -130,7 +132,7 @@ export const getTimetables = async (req, res, next) => {
  */
 export const getTimetableById = async (req, res, next) => {
   try {
-    const timetable = await Timetable.findById(req.params.id);
+    const timetable = await Timetable.findOne({ _id: req.params.id, userId: req.user._id });
     if (!timetable) {
       res.status(404);
       throw new Error('Timetable not found');
@@ -149,7 +151,7 @@ export const getTimetableById = async (req, res, next) => {
 export const updateTimetable = async (req, res, next) => {
   try {
     const { name, startDate, endDate, defaultSchedule } = req.body;
-    const timetable = await Timetable.findById(req.params.id);
+    const timetable = await Timetable.findOne({ _id: req.params.id, userId: req.user._id });
 
     if (!timetable) {
       res.status(404);
@@ -167,8 +169,9 @@ export const updateTimetable = async (req, res, next) => {
         throw new Error('Start date must be before end date');
       }
 
-      // Check overlap excluding itself
+      // Check overlap excluding itself for this user
       const overlap = await Timetable.findOne({
+        userId: req.user._id,
         _id: { $ne: timetable._id },
         startDate: { $lte: end },
         endDate: { $gte: start },
@@ -201,10 +204,11 @@ export const updateTimetable = async (req, res, next) => {
       // so they can be regenerated using the new default schedule blueprint
       const now = moment().tz('Asia/Kolkata').toDate();
       const filter = {
+        userId: req.user._id,
         timetableId: timetable._id,
         scheduledStart: { $gt: now }
       };
-      await refundXpForTasks(filter);
+      await refundXpForTasks(filter, req.user._id);
       await TaskInstance.deleteMany(filter);
     }
 
@@ -222,7 +226,7 @@ export const updateTimetable = async (req, res, next) => {
  */
 export const deleteTimetable = async (req, res, next) => {
   try {
-    const timetable = await Timetable.findById(req.params.id);
+    const timetable = await Timetable.findOne({ _id: req.params.id, userId: req.user._id });
     if (!timetable) {
       res.status(404);
       throw new Error('Timetable not found');
@@ -231,6 +235,7 @@ export const deleteTimetable = async (req, res, next) => {
     const now = moment.tz('Asia/Kolkata').toDate();
     // Check if there are any generated task instances for this timetable that have already ended
     const pastTasksCount = await TaskInstance.countDocuments({
+      userId: req.user._id,
       timetableId: timetable._id,
       scheduledEnd: { $lt: now }
     });
@@ -242,15 +247,16 @@ export const deleteTimetable = async (req, res, next) => {
 
     // Delete all task instances generated from this timetable
     const filter = {
+      userId: req.user._id,
       timetableId: timetable._id
     };
-    await refundXpForTasks(filter);
+    await refundXpForTasks(filter, req.user._id);
     await TaskInstance.deleteMany(filter);
 
     await timetable.deleteOne();
 
     // Recalculate streak
-    await updateStreak();
+    await updateStreak(req.user._id);
 
     res.json({ message: 'Timetable removed and all task instances cleared' });
   } catch (error) {
@@ -266,7 +272,7 @@ export const deleteTimetable = async (req, res, next) => {
 export const addOrUpdateOverride = async (req, res, next) => {
   try {
     const { date, tasks } = req.body; // date format: YYYY-MM-DD
-    const timetable = await Timetable.findById(req.params.id);
+    const timetable = await Timetable.findOne({ _id: req.params.id, userId: req.user._id });
 
     if (!timetable) {
       res.status(404);
@@ -318,11 +324,12 @@ export const addOrUpdateOverride = async (req, res, next) => {
     // so they regenerate using the new override
     const now = moment().tz('Asia/Kolkata').toDate();
     const filter = {
+      userId: req.user._id,
       timetableId: timetable._id,
       date,
       scheduledStart: { $gt: now }
     };
-    await refundXpForTasks(filter);
+    await refundXpForTasks(filter, req.user._id);
     await TaskInstance.deleteMany(filter);
 
     const updatedTimetable = await timetable.save();

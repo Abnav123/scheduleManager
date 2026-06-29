@@ -23,7 +23,7 @@ export const getTasksForDate = async (req, res, next) => {
       throw new Error('Date format must be YYYY-MM-DD');
     }
 
-    const tasks = await generateDailyTasks(dateStr);
+    const tasks = await generateDailyTasks(dateStr, req.user._id);
     res.json(tasks);
   } catch (error) {
     next(error);
@@ -67,6 +67,7 @@ export const createCustomTask = async (req, res, next) => {
     }
 
     const task = await TaskInstance.create({
+      userId: req.user._id,
       name,
       category,
       date,
@@ -96,7 +97,7 @@ export const createCustomTask = async (req, res, next) => {
 export const editTaskInstance = async (req, res, next) => {
   try {
     const { name, category, startTime, endTime, punishment, notes } = req.body;
-    const task = await TaskInstance.findById(req.params.id);
+    const task = await TaskInstance.findOne({ _id: req.params.id, userId: req.user._id });
 
     if (!task) {
       res.status(404);
@@ -140,7 +141,7 @@ export const editTaskInstance = async (req, res, next) => {
       task.originalDuration = originalDuration;
       task.reducedDuration = originalDuration; // reset reduction if times modified
       if (task.xpSpent > 0) {
-        const user = await User.findOne({});
+        const user = await User.findById(req.user._id);
         if (user) {
           user.xp += task.xpSpent;
           user.xpSpent = Math.max(0, user.xpSpent - task.xpSpent);
@@ -164,7 +165,7 @@ export const editTaskInstance = async (req, res, next) => {
  */
 export const deleteTaskInstance = async (req, res, next) => {
   try {
-    const task = await TaskInstance.findById(req.params.id);
+    const task = await TaskInstance.findOne({ _id: req.params.id, userId: req.user._id });
     if (!task) {
       res.status(404);
       throw new Error('Task not found');
@@ -175,7 +176,7 @@ export const deleteTaskInstance = async (req, res, next) => {
       throw new Error('Task is immutable because its end time has passed');
     }
     if (task.xpSpent > 0) {
-      const user = await User.findOne({});
+      const user = await User.findById(req.user._id);
       if (user) {
         user.xp += task.xpSpent;
         user.xpSpent = Math.max(0, user.xpSpent - task.xpSpent);
@@ -232,7 +233,7 @@ export const spendXpForDuration = async (req, res, next) => {
 export const markTaskUnavoidable = async (req, res, next) => {
   try {
     const { reason } = req.body;
-    const updatedTask = await markUnavoidable(req.params.id, reason);
+    const updatedTask = await markUnavoidable(req.params.id, reason, req.user._id);
     res.json(updatedTask);
   } catch (error) {
     res.status(400);
@@ -253,7 +254,7 @@ export const updatePunishment = async (req, res, next) => {
       throw new Error("Punishment status must be 'Pending' or 'Completed'");
     }
 
-    const task = await TaskInstance.findById(req.params.id);
+    const task = await TaskInstance.findOne({ _id: req.params.id, userId: req.user._id });
     if (!task) {
       res.status(404);
       throw new Error('Task not found');
@@ -280,6 +281,7 @@ export const updatePunishment = async (req, res, next) => {
 export const getPendingPunishments = async (req, res, next) => {
   try {
     const punishments = await TaskInstance.find({
+      userId: req.user._id,
       status: 'Missed',
       punishmentStatus: 'Pending',
     }).sort({ date: -1, startTime: -1 });
@@ -288,4 +290,3 @@ export const getPendingPunishments = async (req, res, next) => {
     next(error);
   }
 };
-

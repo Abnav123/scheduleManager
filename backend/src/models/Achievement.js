@@ -2,10 +2,14 @@ import mongoose from 'mongoose';
 
 const achievementSchema = new mongoose.Schema(
   {
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+    },
     name: {
       type: String,
       required: true,
-      unique: true,
       trim: true,
     },
     description: {
@@ -30,6 +34,8 @@ const achievementSchema = new mongoose.Schema(
     timestamps: true,
   }
 );
+
+achievementSchema.index({ userId: 1, name: 1 }, { unique: true });
 
 const Achievement = mongoose.model('Achievement', achievementSchema);
 export default Achievement;

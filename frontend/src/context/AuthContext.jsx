@@ -44,6 +44,23 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
+  // Register handler
+  const register = useCallback(async (username, password) => {
+    try {
+      const res = await api.post('/auth/register', { username, password });
+      const { token, ...userData } = res.data;
+      
+      localStorage.setItem('token', token);
+      localStorage.setItem('user', JSON.stringify(userData));
+      setUser(userData);
+      
+      return userData;
+    } catch (error) {
+      const errorMsg = error.response?.data?.message || 'Registration failed. Username may already exist.';
+      throw new Error(errorMsg);
+    }
+  }, []);
+
   // Logout handler
   const logout = useCallback(async () => {
     try {
@@ -75,9 +92,10 @@ export const AuthProvider = ({ children }) => {
     loading,
     isAuthenticated: !!user,
     login,
+    register,
     logout,
     refreshUser,
-  }), [user, loading, login, logout, refreshUser]);
+  }), [user, loading, login, register, logout, refreshUser]);
 
   return (
     <AuthContext.Provider value={contextValue}>

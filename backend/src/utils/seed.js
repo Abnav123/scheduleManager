@@ -11,11 +11,11 @@ export const seedData = async () => {
     const adminUsername = process.env.ADMIN_USERNAME || 'admin';
     const adminPassword = process.env.ADMIN_PASSWORD || 'adminpassword123';
 
-    const existingAdmin = await User.findOne({ username: adminUsername });
-    if (!existingAdmin) {
+    let admin = await User.findOne({ username: adminUsername });
+    if (!admin) {
       console.log(`Seeding Admin User: ${adminUsername}`);
       const hashedPassword = await bcrypt.hash(adminPassword, 10);
-      await User.create({
+      admin = await User.create({
         username: adminUsername,
         password: hashedPassword,
         xp: 0,
@@ -26,8 +26,8 @@ export const seedData = async () => {
       console.log('Admin user seeded successfully');
     }
 
-    // 2. Seed Default Achievements
-    await seedAchievements();
+    // 2. Seed Default Achievements for Admin
+    await seedAchievements(admin._id);
     console.log('Achievements seeded successfully');
 
     // 3. Clean up previously seeded default timetable if it exists

@@ -2,10 +2,14 @@ import mongoose from 'mongoose';
 
 const dailyReflectionSchema = new mongoose.Schema(
   {
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+    },
     date: {
       type: String,
       required: true,
-      unique: true, // One reflection per day
     },
     mood: {
       type: String,
@@ -22,6 +26,8 @@ const dailyReflectionSchema = new mongoose.Schema(
     timestamps: true,
   }
 );
+
+dailyReflectionSchema.index({ userId: 1, date: 1 }, { unique: true });
 
 const DailyReflection = mongoose.model('DailyReflection', dailyReflectionSchema);
 export default DailyReflection;

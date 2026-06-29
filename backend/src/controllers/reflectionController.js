@@ -23,7 +23,7 @@ export const saveReflection = async (req, res, next) => {
 
     // If reflectionNotes is empty or blank, delete the reflection entry for this date
     if (!reflectionNotes || reflectionNotes.trim() === '') {
-      await DailyReflection.findOneAndDelete({ date });
+      await DailyReflection.findOneAndDelete({ date, userId: req.user._id });
       return res.json({ message: 'Reflection cleared', cleared: true });
     }
 
@@ -38,8 +38,8 @@ export const saveReflection = async (req, res, next) => {
     }
 
     const reflection = await DailyReflection.findOneAndUpdate(
-      { date },
-      { mood, reflectionNotes },
+      { date, userId: req.user._id },
+      { userId: req.user._id, mood, reflectionNotes },
       { new: true, upsert: true }
     );
 
@@ -57,7 +57,7 @@ export const saveReflection = async (req, res, next) => {
 export const getReflectionByDate = async (req, res, next) => {
   try {
     const date = req.query.date || getTodayIST();
-    const reflection = await DailyReflection.findOne({ date });
+    const reflection = await DailyReflection.findOne({ date, userId: req.user._id });
 
     if (!reflection) {
       return res.json(null); // Return null instead of error if not reflection set yet
