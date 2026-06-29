@@ -1,15 +1,105 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import api from '../utils/api.js';
 import { 
-  Calendar, ChevronLeft, ChevronRight, BookOpen, 
-  MessageSquare, Award
+  BookOpen, MessageSquare, Award
 } from 'lucide-react';
 import { getTodayIST } from '../utils/dateHelper.js';
 import moment from 'moment';
 
+const BlueprintCalendar = ({ selectedDate, onSelectDate }) => {
+  const [currentMonth, setCurrentMonth] = useState(() => moment().startOf('month'));
+  const today = moment().startOf('day');
+
+  const prevMonth = () => {
+    setCurrentMonth(currentMonth.clone().subtract(1, 'month'));
+  };
+
+  const nextMonth = () => {
+    setCurrentMonth(currentMonth.clone().add(1, 'month'));
+  };
+
+  // Generate calendar days
+  const startDay = currentMonth.clone().startOf('month').startOf('week');
+  const endDay = currentMonth.clone().endOf('month').endOf('week');
+
+  const days = [];
+  let day = startDay.clone();
+  while (day.isBefore(endDay, 'day')) {
+    days.push(day.clone());
+    day.add(1, 'day');
+  }
+
+  return (
+    <div className="p-4 border-2 border-white bg-[#0e1017] max-w-sm w-full select-none brutalist-card font-mono text-white">
+      {/* Month Navigation */}
+      <div className="flex items-center justify-between mb-3">
+        <button
+          type="button"
+          onClick={prevMonth}
+          className="p-1 hover:bg-neutral-900 border border-white rounded-none text-white text-xs font-bold font-mono"
+        >
+          &larr;
+        </button>
+        <span className="text-xs font-bold uppercase tracking-wider text-white font-mono">
+          {currentMonth.format('MMMM YYYY')}
+        </span>
+        <button
+          type="button"
+          onClick={nextMonth}
+          className="p-1 hover:bg-neutral-900 border border-white rounded-none text-white text-xs font-bold font-mono"
+        >
+          &rarr;
+        </button>
+      </div>
+
+      {/* Weekdays */}
+      <div className="grid grid-cols-7 gap-1 text-center text-[10px] uppercase font-mono text-neutral-400 mb-1.5 font-bold">
+        {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(d => (
+          <div key={d}>{d}</div>
+        ))}
+      </div>
+
+      {/* Days Grid */}
+      <div className="grid grid-cols-7 gap-1">
+        {days.map(d => {
+          const dateStr = d.format('YYYY-MM-DD');
+          const isCurrentMonth = d.month() === currentMonth.month();
+          const isSelected = selectedDate === dateStr;
+          const isToday = d.isSame(today, 'day');
+
+          return (
+            <button
+              key={dateStr}
+              type="button"
+              onClick={() => onSelectDate(dateStr)}
+              className={`h-8 rounded-none text-[10px] flex flex-col items-center justify-center relative font-mono transition-all duration-100 ${
+                !isCurrentMonth ? 'text-neutral-500 opacity-40' : ''
+              } ${
+                isSelected 
+                  ? 'bg-white text-black font-bold border border-white' 
+                  : isToday
+                    ? 'border-2 border-yellow-400 bg-yellow-400 bg-opacity-10 text-white font-bold'
+                    : 'hover:bg-neutral-900 text-white border border-neutral-800'
+              }`}
+            >
+              <span>{d.date()}</span>
+            </button>
+          );
+        })}
+      </div>
+      <div className="mt-3 flex items-center justify-between text-[8px] text-neutral-400 font-mono border-t-2 border-white pt-2 font-bold">
+        <span className="flex items-center gap-1">
+          <span className="w-2 h-2 border border-yellow-400 bg-yellow-400 bg-opacity-10"></span> Today
+        </span>
+        <span>Selected: {moment(selectedDate).format('DD MMM YYYY')}</span>
+      </div>
+    </div>
+  );
+};
+
 const History = () => {
   const [viewMode, setViewMode] = useState('timeline'); // 'timeline' or 'blueprint'
-  const [date, setDate] = useState(getTodayIST());
+  const date = getTodayIST();
   const [timeline, setTimeline] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -18,23 +108,42 @@ const History = () => {
   const [timetables, setTimetables] = useState([]);
   const [selectedTimetableId, setSelectedTimetableId] = useState('');
   const [selectedTimetable, setSelectedTimetable] = useState(null);
+  const [blueprintDate, setBlueprintDate] = useState(getTodayIST());
+  const [activeTimetable, setActiveTimetable] = useState(null);
 
-  // Fetch timetables list for blueprint view
+  // Fetch timetables list for blueprint view when viewMode is 'blueprint'
   useEffect(() => {
-    const fetchTimetables = async () => {
-      try {
-        const res = await api.get('/timetables');
-        setTimetables(res.data);
-        if (res.data.length > 0) {
-          setSelectedTimetableId(res.data[0]._id);
-          setSelectedTimetable(res.data[0]);
+    if (viewMode === 'blueprint') {
+      const fetchTimetables = async () => {
+        try {
+          const res = await api.get('/timetables');
+          setTimetables(res.data);
+          if (res.data.length > 0) {
+            const active = res.data.find(t => t.isActive);
+            setActiveTimetable(active || null);
+            const defaultSelect = active || res.data[0];
+            setSelectedTimetableId(defaultSelect._id);
+            setSelectedTimetable(defaultSelect);
+          } else {
+            setSelectedTimetableId('');
+            setSelectedTimetable(null);
+            setActiveTimetable(null);
+          }
+        } catch (err) {
+          console.error('Failed to fetch timetables', err);
         }
-      } catch (err) {
-        console.error('Failed to fetch timetables', err);
-      }
-    };
-    fetchTimetables();
-  }, []);
+      };
+      fetchTimetables();
+    }
+  }, [viewMode]);
+
+  const handleSelectBlueprintDate = (dateStr) => {
+    setBlueprintDate(dateStr);
+    if (activeTimetable) {
+      setSelectedTimetableId(activeTimetable._id);
+      setSelectedTimetable(activeTimetable);
+    }
+  };
 
   // Update selected timetable object when ID changes
   useEffect(() => {
@@ -65,16 +174,7 @@ const History = () => {
     fetchTimeline(date);
   }, [date, fetchTimeline]);
 
-  // Navigate dates
-  const handlePrevDay = () => {
-    const prev = moment(date, 'YYYY-MM-DD').subtract(1, 'day').format('YYYY-MM-DD');
-    setDate(prev);
-  };
 
-  const handleNextDay = () => {
-    const next = moment(date, 'YYYY-MM-DD').add(1, 'day').format('YYYY-MM-DD');
-    setDate(next);
-  };
 
   const statusIconsColors = {
     Completed: 'bg-[#008000] text-white border-2 border-white shadow-[1px_1px_0px_0px_rgba(255,255,255,1)]',
@@ -120,32 +220,7 @@ const History = () => {
 
       {viewMode === 'timeline' ? (
         <>
-          {/* 1. Date Navigation Header */}
-          <section className="flex items-center justify-between border-b-2 border-white pb-4 gap-4">
-            <button
-              onClick={handlePrevDay}
-              className="p-2 border-2 border-white hover:bg-neutral-900 text-white font-bold transition-all bg-[#0e1017] shadow-[2px_2px_0px_0px_rgba(255,255,255,1)]"
-            >
-              <ChevronLeft size={18} />
-            </button>
 
-            <div className="flex items-center gap-3">
-              <Calendar size={18} className="text-white" />
-              <input
-                type="date"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-                className="text-center font-bold bg-[#0e1017] text-white border-2 border-white px-3 py-1.5"
-              />
-            </div>
-
-            <button
-              onClick={handleNextDay}
-              className="p-2 border-2 border-white hover:bg-neutral-900 text-white font-bold transition-all bg-[#0e1017] shadow-[2px_2px_0px_0px_rgba(255,255,255,1)]"
-            >
-              <ChevronRight size={18} />
-            </button>
-          </section>
 
           {loading ? (
             <div className="text-center py-12 text-sm italic text-neutral-400 font-mono">
@@ -329,74 +404,93 @@ const History = () => {
       ) : (
         /* Blueprint View Mode */
         <div className="flex flex-col gap-6 animate-fade-in font-mono">
-          <section className="flex flex-col gap-4 border-2 border-white p-6 bg-[#0e1017] brutalist-card">
-            <div className="flex flex-col gap-1.5 max-w-md">
-              <label className="text-xs uppercase tracking-widest text-white font-bold font-mono">Select Timetable blueprint</label>
-              <select
-                value={selectedTimetableId}
-                onChange={(e) => setSelectedTimetableId(e.target.value)}
-                className="w-full text-sm font-bold bg-[#0e1017] text-white border-2 border-white py-1.5"
-              >
-                <option value="">-- Choose Timetable --</option>
-                {timetables.map(t => (
-                  <option key={t._id} value={t._id}>{t.name}</option>
-                ))}
-              </select>
-            </div>
-          </section>
-
-          {selectedTimetable ? (
-            <div className="flex flex-col gap-6 border-2 border-white p-6 bg-[#0e1017] brutalist-card">
-              <div className="border-b-2 border-white pb-4">
-                <h3 className="text-2xl font-bold uppercase tracking-wider font-mono">
-                  {selectedTimetable.name}
-                </h3>
-                <p className="text-xs text-neutral-400 font-mono mt-1 font-bold">
-                  Active timeline: {moment(selectedTimetable.startDate).format('DD MMM YYYY')} &mdash; {moment(selectedTimetable.endDate).format('DD MMM YYYY')}
-                </p>
-              </div>
-
-              <div>
-                <h4 className="text-sm font-bold uppercase tracking-wider mb-4 border-b border-neutral-700 pb-1 font-mono text-neutral-300">
-                  Default Tasks Blueprint ({selectedTimetable.defaultSchedule.length} tasks)
-                </h4>
-                <div className="flex flex-col gap-4">
-                  {selectedTimetable.defaultSchedule.length > 0 ? (
-                    selectedTimetable.defaultSchedule.map((task, idx) => (
-                      <div key={idx} className="p-4 border-2 border-white bg-[#0e1017] flex items-center justify-between gap-4 brutalist-card">
-                        <div>
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="text-[9px] uppercase tracking-widest text-white font-bold border border-white px-1.5 py-0.5 bg-[#0e1017] font-mono shadow-[1px_1px_0px_0px_rgba(255,255,255,1)]">
-                              {task.category}
-                            </span>
-                            <span className="text-[10px] font-mono text-neutral-400 font-bold">
-                              {task.startTime} - {task.endTime}
-                            </span>
-                          </div>
-                          <h5 className="text-sm font-bold text-white font-mono">{task.name}</h5>
-                          {task.notes && (
-                            <p className="text-[11px] text-neutral-400 italic mt-1 font-mono">
-                              "{task.notes}"
-                            </p>
-                          )}
-                        </div>
-                        <div className="text-right">
-                          <span className="text-[10px] uppercase font-mono text-red-500 font-bold block">Sabotage Penalty</span>
-                          <span className="text-xs text-white font-bold">{task.punishment}</span>
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <p className="text-xs text-neutral-500 italic font-mono">No tasks blueprint defined.</p>
-                  )}
+          <div className="flex flex-col md:flex-row gap-6 items-start">
+            {/* Left Column: Dropdown and Calendar */}
+            <div className="flex flex-col gap-6 w-full md:w-auto md:min-w-[320px] shrink-0">
+              <section className="flex flex-col gap-4 border-2 border-white p-6 bg-[#0e1017] brutalist-card">
+                <div className="flex flex-col gap-1.5 w-full">
+                  <label className="text-xs uppercase tracking-widest text-white font-bold font-mono">Select Timetable blueprint</label>
+                  <select
+                    value={selectedTimetableId}
+                    onChange={(e) => setSelectedTimetableId(e.target.value)}
+                    className="w-full text-sm font-bold bg-[#0e1017] text-white border-2 border-white py-1.5"
+                  >
+                    <option value="">-- Choose Timetable --</option>
+                    {timetables.map(t => (
+                      <option key={t._id} value={t._id}>{t.name}</option>
+                    ))}
+                  </select>
                 </div>
-              </div>
+              </section>
+
+              {/* Blueprint Calendar Component */}
+              <BlueprintCalendar 
+                selectedDate={blueprintDate}
+                onSelectDate={handleSelectBlueprintDate}
+              />
             </div>
-          ) : (
-            <div className="text-center py-12 text-sm italic text-neutral-500 font-mono">
-              Select a timetable blueprint to inspect task templates.
+
+            {/* Right Column: Blueprint Details */}
+            <div className="flex-1 w-full">
+              {selectedTimetable ? (
+                <div className="flex flex-col gap-6 border-2 border-white p-6 bg-[#0e1017] brutalist-card">
+                  <div className="border-b-2 border-white pb-4">
+                    <h3 className="text-2xl font-bold uppercase tracking-wider font-mono">
+                      {selectedTimetable.name}
+                    </h3>
+                    <div className="flex justify-between items-center mt-1">
+                      <p className="text-xs text-neutral-400 font-mono font-bold">
+                        Status: <span className={selectedTimetable.isActive ? 'text-green-400' : 'text-neutral-400'}>{selectedTimetable.isActive ? 'ACTIVE' : 'INACTIVE'}</span>
+                      </p>
+                      <p className="text-[10px] text-neutral-400 font-mono font-bold">
+                        Active on: {moment(blueprintDate).format('DD MMM YYYY')}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h4 className="text-sm font-bold uppercase tracking-wider mb-4 border-b border-neutral-700 pb-1 font-mono text-neutral-300">
+                      Default Tasks Blueprint ({selectedTimetable.defaultSchedule.length} tasks)
+                    </h4>
+                    <div className="flex flex-col gap-4">
+                      {selectedTimetable.defaultSchedule.length > 0 ? (
+                        selectedTimetable.defaultSchedule.map((task, idx) => (
+                          <div key={idx} className="p-4 border-2 border-white bg-[#0e1017] flex items-center justify-between gap-4 brutalist-card">
+                            <div>
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="text-[9px] uppercase tracking-widest text-white font-bold border border-white px-1.5 py-0.5 bg-[#0e1017] font-mono shadow-[1px_1px_0px_0px_rgba(255,255,255,1)]">
+                                  {task.category}
+                                </span>
+                                <span className="text-[10px] font-mono text-neutral-400 font-bold">
+                                  {task.startTime} - {task.endTime}
+                                </span>
+                              </div>
+                              <h5 className="text-sm font-bold text-white font-mono">{task.name}</h5>
+                              {task.notes && (
+                                <p className="text-[11px] text-neutral-400 italic mt-1 font-mono">
+                                  "{task.notes}"
+                                </p>
+                              )}
+                            </div>
+                            <div className="text-right">
+                              <span className="text-[10px] uppercase font-mono text-red-500 font-bold block">Sabotage Penalty</span>
+                              <span className="text-xs text-white font-bold">{task.punishment}</span>
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <p className="text-xs text-neutral-500 italic font-mono">No tasks blueprint defined.</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-12 text-sm italic text-neutral-500 font-mono border-2 border-white bg-[#0e1017] p-6 brutalist-card">
+                  Select a timetable blueprint or click a calendar date to inspect task templates.
+                </div>
+              )}
             </div>
-          )}
+          </div>
         </div>
       )}
     </div>
