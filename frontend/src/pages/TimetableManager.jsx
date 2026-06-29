@@ -484,6 +484,8 @@ const TimetableManager = () => {
     }
   };
 
+  const activeTimetables = timetables.filter(t => !moment(t.endDate).isBefore(moment(), 'day'));
+
   return (
     <div className="flex flex-col gap-8 max-w-5xl mx-auto text-white">
       {/* Description Segment */}
@@ -917,9 +919,9 @@ const TimetableManager = () => {
         <h3 className="text-sm uppercase tracking-wider text-white font-bold font-mono">Active Blueprints</h3>
         {loading ? (
           <div className="text-center py-8 text-sm italic text-neutral-400 font-mono">Loading blueprints...</div>
-        ) : timetables.length > 0 ? (
+        ) : activeTimetables.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {timetables.map((t) => {
+            {activeTimetables.map((t) => {
               const startFormatted = moment(t.startDate).format('DD MMM YYYY');
               const endFormatted = moment(t.endDate).format('DD MMM YYYY');
               return (
@@ -936,18 +938,12 @@ const TimetableManager = () => {
                   </div>
 
                   <div className="flex items-center justify-between border-t-2 border-white pt-4">
-                    {moment(t.endDate).isBefore(moment(), 'day') ? (
-                      <span className="text-xs uppercase font-bold text-neutral-400 font-mono">
-                        Blueprint Completed
-                      </span>
-                    ) : (
-                      <button
-                        onClick={() => handleSelectOverrideTimetable(t)}
-                        className="btn-blue"
-                      >
-                        Configure Overrides
-                      </button>
-                    )}
+                    <button
+                      onClick={() => handleSelectOverrideTimetable(t)}
+                      className="btn-blue"
+                    >
+                      Configure Overrides
+                    </button>
                     <button
                       onClick={() => handleDeleteTimetable(t._id)}
                       className="text-red-500 hover:bg-neutral-900 p-1.5 border-2 border-transparent hover:border-white"
@@ -962,7 +958,7 @@ const TimetableManager = () => {
           </div>
         ) : (
           <div className="p-8 text-center border-2 border-dashed border-neutral-600 bg-[#0e1017] text-neutral-400 italic text-sm font-mono font-bold">
-            No timetables scheduled yet. Click "New blueprint" above to create one.
+            No active blueprints scheduled. Click "New blueprint" above to create one.
           </div>
         )}
       </section>
