@@ -29,3 +29,7 @@ build/
 # OS metadata
 .DS_Store
 Thumbs.db
+
+# Dynamic cache files
+**/dailyQuotesCache.json
+

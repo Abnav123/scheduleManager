@@ -20,21 +20,61 @@ import moment from 'moment-timezone';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Helper to get a stable quote for a specific date string
-const getQuoteForDate = (dateStr) => {
-  try {
-    const filePath = path.join(__dirname, '../utils/quotes.json');
-    const rawData = fs.readFileSync(filePath, 'utf-8');
-    const quotes = JSON.parse(rawData);
+// Helper to get a stable quote for a specific date string from API Ninjas with local file caching
+const getQuoteForDate = async (dateStr) => {
+  const cachePath = path.join(__dirname, '../utils/dailyQuotesCache.json');
+  let cache = {};
 
-    let hash = 0;
-    for (let i = 0; i < dateStr.length; i++) {
-      hash = dateStr.charCodeAt(i) + ((hash << 5) - hash);
+  try {
+    if (fs.existsSync(cachePath)) {
+      const rawCache = fs.readFileSync(cachePath, 'utf-8');
+      cache = JSON.parse(rawCache);
     }
-    const index = Math.abs(hash) % quotes.length;
-    return quotes[index];
+  } catch (err) {
+    console.error('Error reading dailyQuotesCache.json:', err);
+  }
+
+  // Check if cache has the quote for the date
+  if (cache[dateStr]) {
+    return cache[dateStr];
+  }
+
+  // Fetch a new quote from API Ninjas
+  try {
+    const apiKey = process.env.API_NINJAS_KEY || 'TLRpHDjucRJsRi45UyhRs5iKAD3pqjxkfwRraDmK';
+    const response = await fetch('https://api.api-ninjas.com/v2/randomquotes?categories=success,wisdom', {
+      headers: {
+        'X-Api-Key': apiKey
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(`API Ninjas responded with status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    if (Array.isArray(data) && data.length > 0 && data[0].quote) {
+      const fetchedQuote = {
+        quote: data[0].quote,
+        author: data[0].author || 'Unknown'
+      };
+
+      // Save to cache
+      cache[dateStr] = fetchedQuote;
+      try {
+        fs.writeFileSync(cachePath, JSON.stringify(cache, null, 2), 'utf-8');
+      } catch (writeErr) {
+        console.error('Error writing to dailyQuotesCache.json:', writeErr);
+      }
+
+      return fetchedQuote;
+    } else {
+      throw new Error('API Ninjas returned empty or invalid data structure');
+    }
   } catch (error) {
-    console.error('Error reading quotes.json:', error);
+    console.error(`Error fetching quote for ${dateStr} from API Ninjas:`, error);
+    
+    // In case of error (network offline/rate limits/bad response), return a fallback quote and do NOT write it to cache
     return {
       quote: "Do nothing that is of no use.",
       author: "Miyamoto Musashi"
@@ -70,7 +110,7 @@ export const getDashboardData = async (req, res, next) => {
       })
     ]);
 
-    const dailyQuote = getQuoteForDate(todayStr);
+    const dailyQuote = await getQuoteForDate(todayStr);
 
     // Calculate level and completion %
     // Let's say Level = Math.floor(totalXP / 1000) + 1, and progress = totalXP % 1000
@@ -251,7 +291,7 @@ export const getTimelineData = async (req, res, next) => {
     const disciplineScore = totalCompletedOrMissed > 0 ? Math.round((completedCount / totalCompletedOrMissed) * 100) : 100;
 
     // Get stable quote for this date
-    const dailyQuote = getQuoteForDate(dateStr);
+    const dailyQuote = await getQuoteForDate(dateStr);
 
     // Formatting date label: e.g. "28 June 2026"
     const formattedDateLabel = moment.tz(dateStr, 'YYYY-MM-DD', 'Asia/Kolkata').format('DD MMMM YYYY');
