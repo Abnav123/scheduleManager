@@ -74,11 +74,8 @@ const getQuoteForDate = async (dateStr) => {
   } catch (error) {
     console.error(`Error fetching quote for ${dateStr} from API Ninjas:`, error);
     
-    // In case of error (network offline/rate limits/bad response), return a fallback quote and do NOT write it to cache
-    return {
-      quote: "Do nothing that is of no use.",
-      author: "Miyamoto Musashi"
-    };
+    // Return null on failure so the user can easily identify when API calls fail
+    return null;
   }
 };
 

@@ -82,7 +82,11 @@ const runTests = async () => {
     }
     const dashData = await dashRes.json();
     console.log(`✓ Dashboard data retrieved!`);
-    console.log(`  Quote of the Day: "${dashData.dailyQuote.quote}" - ${dashData.dailyQuote.author}`);
+    if (dashData.dailyQuote) {
+      console.log(`  Quote of the Day: "${dashData.dailyQuote.quote}" - ${dashData.dailyQuote.author}`);
+    } else {
+      console.log(`  Quote of the Day: null (API fetch failed or returned fallback null)`);
+    }
     console.log(`  Seeded Tasks count today: ${dashData.todayTasks.length}`);
     if (dashData.todayTasks.length > 0) {
       console.log(`  First task: ${dashData.todayTasks[0].name} (${dashData.todayTasks[0].startTime} - ${dashData.todayTasks[0].endTime})`);
