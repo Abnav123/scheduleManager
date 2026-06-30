@@ -110,6 +110,17 @@ npm.cmd run dev
 
 ---
 
+## Hosting
+
+The frontend of the application is hosted on Vercel and can be accessed at:
+- **Live URL**: [https://frontend-nine-steel-34.vercel.app/](https://frontend-nine-steel-34.vercel.app/)
+
+### Deployment Configuration
+- **Vercel Settings**: The project includes a [vercel.json](file:///E:/scheduleManager/frontend/vercel.json) configuration in the frontend directory to handle client-side routing rewrites for React Router.
+- **Backend API URL**: In Vercel, the `VITE_API_URL` environment variable should be configured to point to the production backend API URL (e.g., `https://your-backend-domain.com/api`). If not set, it defaults to `http://localhost:5000/api` for local development.
+
+---
+
 ## Useful Commands
 
 ```bash
